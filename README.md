@@ -17,4 +17,4 @@ samples, guidance on mobile development, and a full API reference.
 
 hi ni berjaya initialize
 
-ni sumpah try commit pakai vs code je, tak pakai github desktop
+ni sumpah try commit pakai vs code je, tak pakai github desktop dsadsa
