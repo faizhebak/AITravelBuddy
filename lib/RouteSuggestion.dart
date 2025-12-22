@@ -23,7 +23,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  
+
   List<ChatSession> _allSessions = [];
   ChatSession? _currentSession;
   bool _isTyping = false;
@@ -69,11 +69,14 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       aiSettings: _globalSettings,
     );
 
-    newSession.messages.add(ChatMessage(
-      text: "Selamat datang! 👋 I'm your Malaysia tourism AI assistant. I can help you with:\n\n🏨 Hotel Booking\n🗺️ Route Suggestions\n🍜 Food Recommendations\n📸 Food Recognition\n🎭 Cultural Insights\n\nWhat would you like to explore today?",
-      isUser: false,
-      timestamp: DateTime.now(),
-    ));
+    newSession.messages.add(
+      ChatMessage(
+        text:
+            "Selamat datang! 👋 I'm your Malaysia tourism AI assistant. I can help you with:\n\n🏨 Hotel Booking\n🗺️ Route Suggestions\n🍜 Food Recommendations\n📸 Food Recognition\n🎭 Cultural Insights\n\nWhat would you like to explore today?",
+        isUser: false,
+        timestamp: DateTime.now(),
+      ),
+    );
 
     setState(() {
       _currentSession = newSession;
@@ -82,15 +85,14 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   }
 
   void _sendMessage() {
-    if (_messageController.text.trim().isEmpty || _currentSession == null) return;
+    if (_messageController.text.trim().isEmpty || _currentSession == null)
+      return;
 
     final userMessage = _messageController.text.trim();
     setState(() {
-      _currentSession!.messages.add(ChatMessage(
-        text: userMessage,
-        isUser: true,
-        timestamp: DateTime.now(),
-      ));
+      _currentSession!.messages.add(
+        ChatMessage(text: userMessage, isUser: true, timestamp: DateTime.now()),
+      );
       _currentSession!.lastActiveAt = DateTime.now();
       if (_currentSession!.messages.length == 2) {
         _currentSession!.title = _generateTitle(userMessage);
@@ -114,21 +116,23 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     // TODO: Replace with actual API call to Claude/GPT-4
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (!mounted) return;
-      
+
       bool hasRouteCard = userMessage.toLowerCase().contains('route');
 
       setState(() {
         _isTyping = false;
-        _currentSession!.messages.add(ChatMessage(
-          text: hasRouteCard 
-              ? "Here's a personalized 5-stop heritage route in Melaka! 🗺️"
-              : "Great question! 😊 Let me help you with that. Malaysia has incredible ${userMessage.toLowerCase().contains('food') ? 'cuisine' : 'attractions'}!",
-          isUser: false,
-          timestamp: DateTime.now(),
-          hasRouteCard: hasRouteCard,
-        ));
+        _currentSession!.messages.add(
+          ChatMessage(
+            text: hasRouteCard
+                ? "Here's a personalized 5-stop heritage route in Melaka! 🗺️"
+                : "Great question! 😊 Let me help you with that. Malaysia has incredible ${userMessage.toLowerCase().contains('food') ? 'cuisine' : 'attractions'}!",
+            isUser: false,
+            timestamp: DateTime.now(),
+            hasRouteCard: hasRouteCard,
+          ),
+        );
       });
-      
+
       _scrollToBottom();
     });
   }
@@ -159,12 +163,19 @@ class RouteSuggestionState extends State<RouteSuggestion> {
           children: [
             const Text(
               'Upload Image',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 20),
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.white),
-              title: const Text('Take Photo', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'Take Photo',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 // TODO: Implement camera
@@ -173,7 +184,10 @@ class RouteSuggestionState extends State<RouteSuggestion> {
             ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.white),
-              title: const Text('Choose from Gallery', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'Choose from Gallery',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 // TODO: Implement gallery picker
@@ -182,7 +196,10 @@ class RouteSuggestionState extends State<RouteSuggestion> {
             ),
             ListTile(
               leading: const Icon(Icons.close, color: Colors.white),
-              title: const Text('Cancel', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () => Navigator.pop(context),
             ),
           ],
@@ -206,13 +223,21 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                   ? const Center(child: CircularProgressIndicator())
                   : ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16),
-                      itemCount: _currentSession!.messages.length + (_isTyping ? 1 : 0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 16,
+                      ),
+                      itemCount:
+                          _currentSession!.messages.length +
+                          (_isTyping ? 1 : 0),
                       itemBuilder: (context, index) {
-                        if (_isTyping && index == _currentSession!.messages.length) {
+                        if (_isTyping &&
+                            index == _currentSession!.messages.length) {
                           return _buildTypingIndicator();
                         }
-                        return _buildMessageBubble(_currentSession!.messages[index]);
+                        return _buildMessageBubble(
+                          _currentSession!.messages[index],
+                        );
                       },
                     ),
             ),
@@ -238,7 +263,14 @@ class RouteSuggestionState extends State<RouteSuggestion> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Chat History', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Chat History',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   Row(
                     children: [
                       IconButton(
@@ -248,13 +280,13 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                           _createNewSession();
                         },
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.settings, color: Colors.white),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _openAISettings();
-                        },
-                      ),
+                      // IconButton(
+                      //   icon: const Icon(Icons.settings, color: Colors.white),
+                      //   onPressed: () {
+                      //     Navigator.pop(context);
+                      //     _openAISettings();
+                      //   },
+                      // ),
                     ],
                   ),
                 ],
@@ -266,7 +298,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                 itemBuilder: (context, index) {
                   final session = _allSessions[index];
                   final isActive = _currentSession?.id == session.id;
-                  
+
                   return InkWell(
                     onTap: () {
                       setState(() {
@@ -275,16 +307,27 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                       Navigator.pop(context);
                     },
                     child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        gradient: isActive ? const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)]) : null,
+                        gradient: isActive
+                            ? const LinearGradient(
+                                colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                              )
+                            : null,
                         color: isActive ? null : const Color(0xFF1E1E1E),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         session.title,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   );
@@ -297,34 +340,43 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     );
   }
 
-void _openAISettings() {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => AISettingsScreen(
-        settings: _globalSettings,
-        onSave: (newSettings) {
-          setState(() {
-            _globalSettings = newSettings;
-            // Update current session settings
-            if (_currentSession != null) {
-              _currentSession!.aiSettings = newSettings;
-            }
-          });
-          
-          // TODO: Save to persistent storage
-          // Example: _saveSettingsToStorage(newSettings);
-        },
+  void _openAISettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AISettingsScreen(
+          settings: _globalSettings,
+          onSave: (newSettings) {
+            setState(() {
+              _globalSettings = newSettings;
+              // Update current session settings
+              if (_currentSession != null) {
+                _currentSession!.aiSettings = newSettings;
+              }
+            });
+
+            // TODO: Save to persistent storage
+            // Example: _saveSettingsToStorage(newSettings);
+            
+          },
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildHeader() {
     return Container(
       decoration: BoxDecoration(
-        boxShadow: [BoxShadow(color: const Color(0x4DA51212), blurRadius: 6, offset: const Offset(0, 4))],
-        gradient: const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F), Color(0xFF8B0000)]),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x4DA51212),
+            blurRadius: 6,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        gradient: const LinearGradient(
+          colors: [Color(0xFFA51212), Color(0xFFD32F2F), Color(0xFF8B0000)],
+        ),
       ),
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
@@ -336,9 +388,19 @@ void _openAISettings() {
           Expanded(
             child: Column(
               children: const [
-                Text("Malaysia Explorer", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                  "Malaysia Explorer",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 SizedBox(height: 4),
-                Text("Discover Malaysia with AR & AI", style: TextStyle(color: Colors.white, fontSize: 14)),
+                Text(
+                  "Discover Malaysia with AR & AI",
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+                ),
               ],
             ),
           ),
@@ -351,13 +413,68 @@ void _openAISettings() {
     );
   }
 
+  // Widget _buildHeader() {
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       color: const Color(0xFF000000),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: const Color(0x40000000),
+  //           blurRadius: 50,
+  //           offset: const Offset(0, 25),
+  //         ),
+  //       ],
+  //     ),
+  //     width: double.infinity,
+  //     child: Container(
+  //       decoration: BoxDecoration(
+  //         boxShadow: [
+  //           BoxShadow(
+  //             color: const Color(0x4DA51212),
+  //             blurRadius: 6,
+  //             offset: const Offset(0, 4),
+  //           ),
+  //         ],
+  //         gradient: const LinearGradient(
+  //           begin: Alignment.topCenter,
+  //           end: Alignment.bottomCenter,
+  //           colors: [Color(0xFFA51212), Color(0xFFD32F2F), Color(0xFF8B0000)],
+  //         ),
+  //       ),
+  //       padding: const EdgeInsets.symmetric(vertical: 23),
+  //       child: Column(
+  //         children: [
+  //           const Text(
+  //             "Malaysia Explorer",
+  //             style: TextStyle(
+  //               color: Color(0xFFFFFFFF),
+  //               fontSize: 16,
+  //               fontWeight: FontWeight.bold,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 4),
+  //           const Text(
+  //             "Discover Malaysia with AR & AI",
+  //             style: TextStyle(color: Color(0xFFFFFFFF), fontSize: 14),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildTypingIndicator() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
           Container(
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(100), gradient: const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)])),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(100),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+              ),
+            ),
             padding: const EdgeInsets.all(8),
             margin: const EdgeInsets.only(right: 9),
             child: const Text("👔", style: TextStyle(fontSize: 18)),
@@ -390,11 +507,18 @@ void _openAISettings() {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: message.isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!message.isUser) ...[
             Container(
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(100), gradient: const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)])),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(100),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                ),
+              ),
               padding: const EdgeInsets.all(8),
               margin: const EdgeInsets.only(right: 9),
               child: const Text("👔", style: TextStyle(fontSize: 18)),
@@ -402,27 +526,57 @@ void _openAISettings() {
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: message.isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: message.isUser ? const Color(0xFFA51212) : const Color(0xFF2A2A2A)),
+                    border: Border.all(
+                      color: message.isUser
+                          ? const Color(0xFFA51212)
+                          : const Color(0xFF2A2A2A),
+                    ),
                     borderRadius: BorderRadius.circular(16),
-                    gradient: message.isUser ? const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)]) : null,
+                    gradient: message.isUser
+                        ? const LinearGradient(
+                            colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                          )
+                        : null,
                     color: message.isUser ? null : const Color(0xFF1E1E1E),
                   ),
                   padding: const EdgeInsets.all(13),
-                  margin: EdgeInsets.only(right: message.isUser ? 0 : 32, left: message.isUser ? 32 : 0),
+                  margin: EdgeInsets.only(
+                    right: message.isUser ? 0 : 32,
+                    left: message.isUser ? 32 : 0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(message.text, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                      Text(
+                        message.text,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
                       const SizedBox(height: 8),
-                      Text(_formatTime(message.timestamp), style: TextStyle(color: message.isUser ? const Color(0xFFFFFEFE) : const Color(0xFFB3B3B3), fontSize: 12)),
+                      Text(
+                        _formatTime(message.timestamp),
+                        style: TextStyle(
+                          color: message.isUser
+                              ? const Color(0xFFFFFEFE)
+                              : const Color(0xFFB3B3B3),
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                if (message.hasRouteCard) ...[const SizedBox(height: 8), _buildRouteCard()],
+                if (message.hasRouteCard) ...[
+                  const SizedBox(height: 8),
+                  _buildRouteCard(),
+                ],
               ],
             ),
           ),
@@ -431,10 +585,16 @@ void _openAISettings() {
             Container(
               width: 31,
               height: 31,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(100), color: const Color(0xFF2A2A2A)),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(100),
+                color: const Color(0xFF2A2A2A),
+              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(100),
-                child: Image.network("https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/5b0u8lbp_expires_30_days.png", fit: BoxFit.cover),
+                child: Image.network(
+                  "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/5b0u8lbp_expires_30_days.png",
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ],
@@ -445,24 +605,72 @@ void _openAISettings() {
 
   Widget _buildRouteCard() {
     return Container(
-      decoration: BoxDecoration(border: Border.all(color: const Color(0xFF2A2A2A)), borderRadius: BorderRadius.circular(16), color: const Color(0xFF1E1E1E)),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFF2A2A2A)),
+        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF1E1E1E),
+      ),
       padding: const EdgeInsets.all(17),
       margin: const EdgeInsets.only(right: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildRouteStop("1", "A Famosa Fort", "Portuguese fortress from 1511", "30 min", true),
-          _buildRouteStop("2", "St. Paul's Hill", "Historic church ruins", "45 min", true),
-          _buildRouteStop("3", "Jonker Street", "Night market & shops", "1.5 hrs", true),
-          _buildRouteStop("4", "Cheng Hoon Teng Temple", "Oldest Chinese temple", "30 min", true),
-          _buildRouteStop("5", "Melaka River Cruise", "Scenic river tour", "1 hr", false),
+          _buildRouteStop(
+            "1",
+            "A Famosa Fort",
+            "Portuguese fortress from 1511",
+            "30 min",
+            true,
+          ),
+          _buildRouteStop(
+            "2",
+            "St. Paul's Hill",
+            "Historic church ruins",
+            "45 min",
+            true,
+          ),
+          _buildRouteStop(
+            "3",
+            "Jonker Street",
+            "Night market & shops",
+            "1.5 hrs",
+            true,
+          ),
+          _buildRouteStop(
+            "4",
+            "Cheng Hoon Teng Temple",
+            "Oldest Chinese temple",
+            "30 min",
+            true,
+          ),
+          _buildRouteStop(
+            "5",
+            "Melaka River Cruise",
+            "Scenic river tour",
+            "1 hr",
+            false,
+          ),
           const SizedBox(height: 20),
           InkWell(
             onTap: () => print('Open Google Maps'),
             child: Container(
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), gradient: const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)])),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                ),
+              ),
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: const Center(child: Text("Open in Google Maps", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold))),
+              child: const Center(
+                child: Text(
+                  "Open in Google Maps",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -470,7 +678,13 @@ void _openAISettings() {
     );
   }
 
-  Widget _buildRouteStop(String number, String title, String description, String duration, bool hasLine) {
+  Widget _buildRouteStop(
+    String number,
+    String title,
+    String description,
+    String duration,
+    bool hasLine,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -479,9 +693,24 @@ void _openAISettings() {
           Column(
             children: [
               Container(
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(100), gradient: const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)])),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                child: Text(number, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(100),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
+                child: Text(
+                  number,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               if (hasLine)
                 Container(
@@ -497,14 +726,39 @@ void _openAISettings() {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 5),
-                Text(description, style: const TextStyle(color: Color(0xFFB3B3B3), fontSize: 14)),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: Color(0xFFB3B3B3),
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 10),
                 Container(
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: const Color(0xFF2A2A2A)),
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  child: Text(duration, style: const TextStyle(color: Color(0xFFB3B3B3), fontSize: 12)),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: const Color(0xFF2A2A2A),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    duration,
+                    style: const TextStyle(
+                      color: Color(0xFFB3B3B3),
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -535,13 +789,28 @@ void _openAISettings() {
               style: const TextStyle(color: Colors.white, fontSize: 16),
               decoration: InputDecoration(
                 hintText: "Ask me anything about Malaysia...",
-                hintStyle: const TextStyle(color: Color(0xFFB3B3B3), fontSize: 16),
+                hintStyle: const TextStyle(
+                  color: Color(0xFFB3B3B3),
+                  fontSize: 16,
+                ),
                 filled: true,
                 fillColor: const Color(0xFF1E1E1E),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF2A2A2A))),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF2A2A2A))),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFA51212))),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFFA51212)),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 15,
+                  vertical: 12,
+                ),
               ),
               onSubmitted: (_) => _sendMessage(),
             ),
@@ -552,7 +821,12 @@ void _openAISettings() {
             child: Container(
               width: 39,
               height: 39,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), gradient: const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)])),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                ),
+              ),
               child: const Icon(Icons.send, color: Colors.white),
             ),
           ),
@@ -565,26 +839,64 @@ void _openAISettings() {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF121212),
-        boxShadow: [BoxShadow(color: const Color(0x40000000), blurRadius: 50, offset: const Offset(0, -25))],
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: const Color(0x40000000),
+        //     blurRadius: 50,
+        //     offset: const Offset(0, -25),
+        //   ),
+        // ],
       ),
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildNavItem("https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/rcl0gtkr_expires_30_days.png", "Home", false, () => Navigator.pop(context)),
-          _buildNavItem("https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/k9kjfm62_expires_30_days.png", "AR Scan", false, () => print('AR Scan')),
-          _buildNavItem("https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/nyaet7u9_expires_30_days.png", "Chat AI", true, () {}),
+          _buildNavItem(
+            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/rcl0gtkr_expires_30_days.png",
+            "Home",
+            false,
+            () => Navigator.pop(context),
+          ),
+          _buildNavItem(
+            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/k9kjfm62_expires_30_days.png",
+            "AR Scan",
+            false,
+            () => print('AR Scan'),
+          ),
+          _buildNavItem(
+            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/nyaet7u9_expires_30_days.png",
+            "Chat AI",
+            true,
+            () {},
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(String icon, String label, bool isActive, VoidCallback onTap) {
+  Widget _buildNavItem(
+    String icon,
+    String label,
+    bool isActive,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       child: Container(
         decoration: isActive
-            ? BoxDecoration(borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: const Color(0x4DA51212), blurRadius: 6, offset: const Offset(0, 4))], gradient: const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)]))
+            ? BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0x4DA51212),
+                    blurRadius: 6,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                ),
+              )
             : null,
         padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 11),
         child: Column(
@@ -592,7 +904,13 @@ void _openAISettings() {
           children: [
             Image.network(icon, width: 23, height: 23),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(color: isActive ? Colors.white : const Color(0xFFB3B3B3), fontSize: 12)),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.white : const Color(0xFFB3B3B3),
+                fontSize: 12,
+              ),
+            ),
           ],
         ),
       ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'RouteSuggestion.dart';
+import 'AllDestinationsPage.dart';
+import 'DestinationDetailsPage.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -20,11 +22,10 @@ class HomeState extends State<Home> {
       body: SafeArea(
         child: Container(
           constraints: const BoxConstraints.expand(),
-          color: const Color(0xFFFFFFFF),
+          color: const Color(0xFF000000),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
- 
               // Main content
               Expanded(
                 child: Container(
@@ -128,7 +129,7 @@ class HomeState extends State<Home> {
           _buildAIPoweredCard(),
 
           // Featured Destinations
-          // _buildFeaturedDestinations(context),
+          _buildFeaturedDestinations(context),
         ],
       ),
     );
@@ -412,79 +413,111 @@ class HomeState extends State<Home> {
   }
 
   // Featured Destinations section
-  // Widget _buildFeaturedDestinations(BuildContext context) {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const SizedBox(height: 25),
-  //       Padding(
-  //         padding: const EdgeInsets.symmetric(horizontal: 23),
-  //         child: Row(
-  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //           children: [
-  //             const Text(
-  //               "Featured Destinations",
-  //               style: TextStyle(
-  //                 color: Color(0xFFFFFFFF),
-  //                 fontSize: 16,
-  //                 fontWeight: FontWeight.bold,
-  //               ),
-  //             ),
-  //             TextButton(
-  //               onPressed: () {
-  //                 // TODO: Navigate to All Destinations page
-  //                 // Example: _navigateToPage(context, AllDestinationsPage());
-  //                 print('View All Destinations');
-  //               },
-  //               child: const Text(
-  //                 "View All",
-  //                 style: TextStyle(color: Color(0xFFA51212), fontSize: 14),
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //       const SizedBox(height: 13),
-  //       Padding(
-  //         padding: const EdgeInsets.symmetric(horizontal: 24),
-  //         child: Column(
-  //           children: [
-  //             // Petronas Twin Towers
-  //             _buildDestinationCard(
-  //               image:
-  //                   "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/rl48p2ix_expires_30_days.png",
-  //               title: "Petronas Twin Towers",
-  //               location: "Kuala Lumpur",
-  //               locationIcon:
-  //                   "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/l6hfg72q_expires_30_days.png",
-  //               onTap: () {
-  //                 // TODO: Navigate to AR Scanner for Petronas
-  //                 // Example: _navigateToPage(context, ARScannerPage(landmark: 'petronas'));
-  //                 print('Scan Petronas Twin Towers');
-  //               },
-  //             ),
-  //             const SizedBox(height: 12),
+  Widget _buildFeaturedDestinations(BuildContext context) {
+    final destinations = [
+      {
+        'image':
+            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/rl48p2ix_expires_30_days.png",
+        'title': "Petronas Twin Towers",
+        'location': "Kuala Lumpur",
+        'locationIcon':
+            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/l6hfg72q_expires_30_days.png",
+        'description': "The iconic twin skyscrapers in Kuala Lumpur, Malaysia.",
+      },
+      {
+        'image':
+            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/bvg8eil6_expires_30_days.png",
+        'title': "Batu Caves",
+        'location': "Selangor",
+        'locationIcon':
+            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/ch4tsc0k_expires_30_days.png",
+        'description':
+            "A limestone hill with caves and temples, famous for the Hindu festival Thaipusam.",
+      },
+    ];
 
-  //             // Batu Caves
-  //             _buildDestinationCard(
-  //               image:
-  //                   "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/bvg8eil6_expires_30_days.png",
-  //               title: "Batu Caves",
-  //               location: "Selangor",
-  //               locationIcon:
-  //                   "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/ch4tsc0k_expires_30_days.png",
-  //               onTap: () {
-  //                 // TODO: Navigate to AR Scanner for Batu Caves
-  //                 // Example: _navigateToPage(context, ARScannerPage(landmark: 'batu-caves'));
-  //                 print('Scan Batu Caves');
-  //               },
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 25),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 23),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Featured Destinations",
+                style: TextStyle(
+                  color: Color(0xFFFFFFFF),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  _navigateToPage(
+                    context,
+                    AllDestinationsPage(destinations: destinations),
+                  );
+                },
+                child: const Text(
+                  "View All",
+                  style: TextStyle(color: Color(0xFFA51212), fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 13),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: List.generate(destinations.length, (index) {
+              final dest = destinations[index];
+              return Column(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      _navigateToPage(
+                        context,
+                        DestinationDetailsPage(
+                          title: dest['title'] as String,
+                          image: dest['image'] as String,
+                          location: dest['location'] as String,
+                          locationIcon: dest['locationIcon'] as String,
+                          description: dest['description'] as String,
+                        ),
+                      );
+                    },
+                    child: _buildDestinationCard(
+                      image: dest['image'] as String,
+                      title: dest['title'] as String,
+                      location: dest['location'] as String,
+                      locationIcon: dest['locationIcon'] as String,
+                      onTap: () {
+                        _navigateToPage(
+                          context,
+                          DestinationDetailsPage(
+                            title: dest['title'] as String,
+                            image: dest['image'] as String,
+                            location: dest['location'] as String,
+                            locationIcon: dest['locationIcon'] as String,
+                            description: dest['description'] as String,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  if (index != destinations.length - 1)
+                    const SizedBox(height: 12),
+                ],
+              );
+            }),
+          ),
+        ),
+      ],
+    );
+  }
 
   // Destination card
   Widget _buildDestinationCard({
@@ -511,7 +544,7 @@ class HomeState extends State<Home> {
             child: Image.network(
               image,
               width: 95,
-              height: 95,
+              height: 110,
               fit: BoxFit.cover,
             ),
           ),

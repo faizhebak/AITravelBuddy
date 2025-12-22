@@ -63,14 +63,14 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           _buildHumorLevelSlider(),
           const SizedBox(height: 24),
           _buildAnswerLengthSelector(),
-          const SizedBox(height: 24),
-          _buildProfessionalismSelector(),
+          // const SizedBox(height: 24),
+          // _buildProfessionalismSelector(),
           const SizedBox(height: 24),
           _buildRegionalFocusSelector(),
-          const SizedBox(height: 24),
-          _buildSpecialInterests(),
-          const SizedBox(height: 24),
-          _buildLanguageSelector(),
+          // const SizedBox(height: 24),
+          // _buildSpecialInterests(),
+          // const SizedBox(height: 24),
+          // _buildLanguageSelector(),
           const SizedBox(height: 32),
           _buildResetButton(),
           const SizedBox(height: 16),
@@ -196,14 +196,13 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           ],
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildLabel('Serious'),
-              _buildLabel('Neutral'),
-              _buildLabel('Light'),
-              _buildLabel('Fun'),
+              Expanded(child: Center(child: _buildLabel('Serious'))),
+              Expanded(child: Center(child: _buildLabel('Neutral'))),
+              Expanded(child: Center(child: _buildLabel('Light'))),
+              Expanded(child: Center(child: _buildLabel('Fun'))),
             ],
           ),
         ),
@@ -397,11 +396,25 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                   value: 'Kuala Lumpur',
                   child: Text('Kuala Lumpur'),
                 ),
-                DropdownMenuItem(value: 'Penang', child: Text('Penang')),
-                DropdownMenuItem(value: 'Melaka', child: Text('Melaka')),
                 DropdownMenuItem(value: 'Johor', child: Text('Johor')),
+                DropdownMenuItem(value: 'Kedah', child: Text('Kedah')),
+                DropdownMenuItem(value: 'Kelantan', child: Text('Kelantan')),
+                DropdownMenuItem(value: 'Melaka', child: Text('Melaka')),
+                DropdownMenuItem(
+                  value: 'Negeri Sembilan',
+                  child: Text('Negeri Sembilan'),
+                ),
+                DropdownMenuItem(value: 'Pahang', child: Text('Pahang')),
+                DropdownMenuItem(value: 'Perak', child: Text('Perak')),
+                DropdownMenuItem(value: 'Perlis', child: Text('Perlis')),
+                DropdownMenuItem(value: 'Penang', child: Text('Penang')),
                 DropdownMenuItem(value: 'Sabah', child: Text('Sabah')),
                 DropdownMenuItem(value: 'Sarawak', child: Text('Sarawak')),
+                DropdownMenuItem(value: 'Selangor', child: Text('Selangor')),
+                DropdownMenuItem(
+                  value: 'Terengganu',
+                  child: Text('Terengganu'),
+                ),
               ],
               onChanged: (value) {
                 if (value != null) {
@@ -419,124 +432,124 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     );
   }
 
-  Widget _buildSpecialInterests() {
-    final interests = [
-      'food',
-      'culture',
-      'shopping',
-      'nightlife',
-      'adventure',
-      'history',
-    ];
+  // Widget _buildSpecialInterests() {
+  //   final interests = [
+  //     'food',
+  //     'culture',
+  //     'shopping',
+  //     'nightlife',
+  //     'adventure',
+  //     'history',
+  //   ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '🎯 Special Interests',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: interests.map((interest) {
-            final isSelected = _currentSettings.specialInterests.contains(
-              interest,
-            );
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  if (isSelected) {
-                    _currentSettings = _currentSettings.copyWith(
-                      specialInterests: List.from(
-                        _currentSettings.specialInterests,
-                      )..remove(interest),
-                    );
-                  } else {
-                    _currentSettings = _currentSettings.copyWith(
-                      specialInterests: List.from(
-                        _currentSettings.specialInterests,
-                      )..add(interest),
-                    );
-                  }
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? const LinearGradient(
-                          colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
-                        )
-                      : null,
-                  color: isSelected ? null : const Color(0xFF1E1E1E),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFFA51212)
-                        : const Color(0xFF2A2A2A),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isSelected)
-                      const Icon(Icons.check, size: 16, color: Colors.white),
-                    if (isSelected) const SizedBox(width: 4),
-                    Text(
-                      interest.capitalize(),
-                      style: TextStyle(
-                        color: isSelected
-                            ? Colors.white
-                            : const Color(0xFFB3B3B3),
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  // const Text(
+  //   '🎯 Special Interests',
+  //   style: TextStyle(
+  //     color: Colors.white,
+  //     fontSize: 18,
+  //     fontWeight: FontWeight.bold,
+  //   ),
+  // ),
+  //       const SizedBox(height: 16),
+  //       Wrap(
+  //         spacing: 8,
+  //         runSpacing: 8,
+  //         children: interests.map((interest) {
+  //           final isSelected = _currentSettings.specialInterests.contains(
+  //             interest,
+  //           );
+  //           return GestureDetector(
+  //             onTap: () {
+  //               setState(() {
+  //                 if (isSelected) {
+  //                   _currentSettings = _currentSettings.copyWith(
+  //                     specialInterests: List.from(
+  //                       _currentSettings.specialInterests,
+  //                     )..remove(interest),
+  //                   );
+  //                 } else {
+  //                   _currentSettings = _currentSettings.copyWith(
+  //                     specialInterests: List.from(
+  //                       _currentSettings.specialInterests,
+  //                     )..add(interest),
+  //                   );
+  //                 }
+  //               });
+  //             },
+  //             child: Container(
+  //               padding: const EdgeInsets.symmetric(
+  //                 horizontal: 16,
+  //                 vertical: 10,
+  //               ),
+  //               decoration: BoxDecoration(
+  //                 gradient: isSelected
+  //                     ? const LinearGradient(
+  //                         colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+  //                       )
+  //                     : null,
+  //                 color: isSelected ? null : const Color(0xFF1E1E1E),
+  //                 borderRadius: BorderRadius.circular(20),
+  //                 border: Border.all(
+  //                   color: isSelected
+  //                       ? const Color(0xFFA51212)
+  //                       : const Color(0xFF2A2A2A),
+  //                 ),
+  //               ),
+  //               child: Row(
+  //                 mainAxisSize: MainAxisSize.min,
+  //                 children: [
+  //                   if (isSelected)
+  //                     const Icon(Icons.check, size: 16, color: Colors.white),
+  //                   if (isSelected) const SizedBox(width: 4),
+  //                   Text(
+  //                     interest.capitalize(),
+  //                     style: TextStyle(
+  //                       color: isSelected
+  //                           ? Colors.white
+  //                           : const Color(0xFFB3B3B3),
+  //                       fontWeight: isSelected
+  //                           ? FontWeight.bold
+  //                           : FontWeight.normal,
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           );
+  //         }).toList(),
+  //       ),
+  //     ],
+  //   );
+  // }
 
-  Widget _buildLanguageSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '🗣️ Language Preference',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(child: _buildLanguageChip('en', 'English', '🇬🇧')),
-            const SizedBox(width: 8),
-            Expanded(child: _buildLanguageChip('ms', 'Bahasa', '🇲🇾')),
-            const SizedBox(width: 8),
-            Expanded(child: _buildLanguageChip('zh', '中文', '🇨🇳')),
-          ],
-        ),
-      ],
-    );
-  }
+  // Widget _buildLanguageSelector() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Text(
+  //         '🗣️ Language Preference',
+  //         style: TextStyle(
+  //           color: Colors.white,
+  //           fontSize: 18,
+  //           fontWeight: FontWeight.bold,
+  //         ),
+  //       ),
+  //       const SizedBox(height: 16),
+  //       Row(
+  //         children: [
+  //           Expanded(child: _buildLanguageChip('en', 'English', '🇬🇧')),
+  //           const SizedBox(width: 8),
+  //           Expanded(child: _buildLanguageChip('ms', 'Bahasa', '🇲🇾')),
+  //           const SizedBox(width: 8),
+  //           Expanded(child: _buildLanguageChip('zh', '中文', '🇨🇳')),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildLanguageChip(String code, String label, String flag) {
     final isSelected = _currentSettings.language == code;
