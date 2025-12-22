@@ -1,3 +1,4 @@
+// From github desktop from laptop acad
 import 'package:flutter/material.dart';
 
 // Import the models file (chatbot_models.dart)
@@ -46,7 +47,10 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
             },
             child: const Text(
               'Save',
-              style: TextStyle(color: Color(0xFFA51212), fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Color(0xFFA51212),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -82,7 +86,11 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       children: [
         const Text(
           '🎨 Avatar Appearance',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         SingleChildScrollView(
@@ -113,12 +121,16 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: isSelected
-              ? const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)])
+              ? const LinearGradient(
+                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                )
               : null,
           color: isSelected ? null : const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+            color: isSelected
+                ? const Color(0xFFA51212)
+                : const Color(0xFF2A2A2A),
             width: 2,
           ),
         ),
@@ -146,7 +158,11 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       children: [
         const Text(
           '😄 Humor Level',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         Row(
@@ -168,7 +184,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                   divisions: 3,
                   onChanged: (value) {
                     setState(() {
-                      _currentSettings = _currentSettings.copyWith(humorLevel: value.toInt());
+                      _currentSettings = _currentSettings.copyWith(
+                        humorLevel: value.toInt(),
+                      );
                     });
                   },
                 ),
@@ -199,7 +217,11 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       children: [
         const Text(
           '📏 Answer Length',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         _buildRadioOption('short', 'Short', '1-2 sentences'),
@@ -224,7 +246,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           color: const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+            color: isSelected
+                ? const Color(0xFFA51212)
+                : const Color(0xFF2A2A2A),
             width: 2,
           ),
         ),
@@ -235,8 +259,15 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               height: 20,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A), width: 2),
-                color: isSelected ? const Color(0xFFA51212) : Colors.transparent,
+                border: Border.all(
+                  color: isSelected
+                      ? const Color(0xFFA51212)
+                      : const Color(0xFF2A2A2A),
+                  width: 2,
+                ),
+                color: isSelected
+                    ? const Color(0xFFA51212)
+                    : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(Icons.circle, size: 12, color: Colors.white)
@@ -250,14 +281,21 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                   Text(
                     title,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : const Color(0xFFB3B3B3),
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFFB3B3B3),
                       fontSize: 16,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(color: Color(0xFF888888), fontSize: 12),
+                    style: const TextStyle(
+                      color: Color(0xFF888888),
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -274,7 +312,11 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       children: [
         const Text(
           '💼 Professionalism',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -291,14 +333,25 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               dropdownColor: const Color(0xFF1E1E1E),
               style: const TextStyle(color: Colors.white, fontSize: 16),
               items: const [
-                DropdownMenuItem(value: 'casual', child: Text('👕 Casual Traveler Guide')),
-                DropdownMenuItem(value: 'friendly', child: Text('🎽 Friendly Tour Guide')),
-                DropdownMenuItem(value: 'professional', child: Text('💼 Professional Expert')),
+                DropdownMenuItem(
+                  value: 'casual',
+                  child: Text('👕 Casual Traveler Guide'),
+                ),
+                DropdownMenuItem(
+                  value: 'friendly',
+                  child: Text('🎽 Friendly Tour Guide'),
+                ),
+                DropdownMenuItem(
+                  value: 'professional',
+                  child: Text('💼 Professional Expert'),
+                ),
               ],
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
-                    _currentSettings = _currentSettings.copyWith(professionalism: value);
+                    _currentSettings = _currentSettings.copyWith(
+                      professionalism: value,
+                    );
                   });
                 }
               },
@@ -315,7 +368,11 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       children: [
         const Text(
           '🌍 Regional Focus',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -332,8 +389,14 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               dropdownColor: const Color(0xFF1E1E1E),
               style: const TextStyle(color: Colors.white, fontSize: 16),
               items: const [
-                DropdownMenuItem(value: 'All Malaysia', child: Text('All Malaysia')),
-                DropdownMenuItem(value: 'Kuala Lumpur', child: Text('Kuala Lumpur')),
+                DropdownMenuItem(
+                  value: 'All Malaysia',
+                  child: Text('All Malaysia'),
+                ),
+                DropdownMenuItem(
+                  value: 'Kuala Lumpur',
+                  child: Text('Kuala Lumpur'),
+                ),
                 DropdownMenuItem(value: 'Penang', child: Text('Penang')),
                 DropdownMenuItem(value: 'Melaka', child: Text('Melaka')),
                 DropdownMenuItem(value: 'Johor', child: Text('Johor')),
@@ -343,7 +406,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
-                    _currentSettings = _currentSettings.copyWith(regionalFocus: value);
+                    _currentSettings = _currentSettings.copyWith(
+                      regionalFocus: value,
+                    );
                   });
                 }
               },
@@ -355,57 +420,86 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
   }
 
   Widget _buildSpecialInterests() {
-    final interests = ['food', 'culture', 'shopping', 'nightlife', 'adventure', 'history'];
-    
+    final interests = [
+      'food',
+      'culture',
+      'shopping',
+      'nightlife',
+      'adventure',
+      'history',
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           '🎯 Special Interests',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: interests.map((interest) {
-            final isSelected = _currentSettings.specialInterests.contains(interest);
+            final isSelected = _currentSettings.specialInterests.contains(
+              interest,
+            );
             return GestureDetector(
               onTap: () {
                 setState(() {
                   if (isSelected) {
                     _currentSettings = _currentSettings.copyWith(
-                      specialInterests: List.from(_currentSettings.specialInterests)..remove(interest),
+                      specialInterests: List.from(
+                        _currentSettings.specialInterests,
+                      )..remove(interest),
                     );
                   } else {
                     _currentSettings = _currentSettings.copyWith(
-                      specialInterests: List.from(_currentSettings.specialInterests)..add(interest),
+                      specialInterests: List.from(
+                        _currentSettings.specialInterests,
+                      )..add(interest),
                     );
                   }
                 });
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   gradient: isSelected
-                      ? const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)])
+                      ? const LinearGradient(
+                          colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                        )
                       : null,
                   color: isSelected ? null : const Color(0xFF1E1E1E),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+                    color: isSelected
+                        ? const Color(0xFFA51212)
+                        : const Color(0xFF2A2A2A),
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (isSelected) const Icon(Icons.check, size: 16, color: Colors.white),
+                    if (isSelected)
+                      const Icon(Icons.check, size: 16, color: Colors.white),
                     if (isSelected) const SizedBox(width: 4),
                     Text(
                       interest.capitalize(),
                       style: TextStyle(
-                        color: isSelected ? Colors.white : const Color(0xFFB3B3B3),
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? Colors.white
+                            : const Color(0xFFB3B3B3),
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -424,7 +518,11 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       children: [
         const Text(
           '🗣️ Language Preference',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -452,12 +550,16 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           gradient: isSelected
-              ? const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)])
+              ? const LinearGradient(
+                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                )
               : null,
           color: isSelected ? null : const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+            color: isSelected
+                ? const Color(0xFFA51212)
+                : const Color(0xFF2A2A2A),
             width: 2,
           ),
         ),
@@ -515,7 +617,11 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               SizedBox(width: 8),
               Text(
                 'Preview',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
