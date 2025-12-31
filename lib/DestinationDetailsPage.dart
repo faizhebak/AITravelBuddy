@@ -8,13 +8,13 @@ class DestinationDetailsPage extends StatelessWidget {
   final String description;
 
   const DestinationDetailsPage({
-    Key? key,
+    super.key,
     required this.title,
     required this.image,
     required this.location,
     required this.locationIcon,
     required this.description,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

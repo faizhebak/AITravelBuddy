@@ -85,8 +85,9 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   }
 
   void _sendMessage() {
-    if (_messageController.text.trim().isEmpty || _currentSession == null)
+    if (_messageController.text.trim().isEmpty || _currentSession == null) {
       return;
+    }
 
     final userMessage = _messageController.text.trim();
     setState(() {

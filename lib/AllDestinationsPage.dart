@@ -3,8 +3,7 @@ import 'DestinationDetailsPage.dart';
 
 class AllDestinationsPage extends StatelessWidget {
   final List<Map<String, Object>> destinations;
-  const AllDestinationsPage({Key? key, required this.destinations})
-    : super(key: key);
+  const AllDestinationsPage({super.key, required this.destinations});
 
   @override
   Widget build(BuildContext context) {

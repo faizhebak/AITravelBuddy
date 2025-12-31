@@ -2,7 +2,6 @@
 // DATA MODELS
 // ============================================================================
 
-import 'package:flutter/material.dart';
 
 enum MessageType {
   text,
