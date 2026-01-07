@@ -3,6 +3,7 @@ import 'dart:async';
 
 import '../data/chatbot_models.dart';
 import 'ai_settings_screen.dart';
+import '../services/settings_service.dart';
 
 class RouteSuggestion extends StatefulWidget {
   const RouteSuggestion({super.key});
@@ -26,6 +27,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     super.initState();
     _loadChatSessions();
     _createNewSession();
+    _loadSettingsFromStore();
   }
 
   @override
@@ -326,7 +328,9 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       MaterialPageRoute(
         builder: (context) => AISettingsScreen(
           settings: _globalSettings,
-          onSave: (newSettings) {
+          onSave: (newSettings) async {
+            final userId = await _getUserId();
+            await SettingsService.saveSettings(userId, newSettings);
             setState(() {
               _globalSettings = newSettings;
               if (_currentSession != null) {
@@ -337,6 +341,22 @@ class RouteSuggestionState extends State<RouteSuggestion> {
         ),
       ),
     );
+  }
+
+  // Placeholder user id retrieval - replace with real phone/user id retrieval as needed
+  Future<String> _getUserId() async {
+    return 'local_user';
+  }
+
+  Future<void> _loadSettingsFromStore() async {
+    final userId = await _getUserId();
+    final settings = await SettingsService.loadSettings(userId);
+    setState(() {
+      _globalSettings = settings;
+      if (_currentSession != null) {
+        _currentSession!.aiSettings = settings;
+      }
+    });
   }
 
   Widget _buildHeader() {
