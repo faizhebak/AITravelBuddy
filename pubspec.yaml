@@ -27,13 +27,35 @@ environment:
 # dependencies can be manually updated by changing the version numbers below to
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
+# dependencies:
+#   flutter:
+#     sdk: flutter
+#   camera: ^0.10.5+5
+#   google_mlkit_image_labeling: ^0.9.0
+#   permission_handler: ^11.0.1
+#   image_picker: ^1.0.4
+#   google_mlkit_commons: ^0.7.0
+
 dependencies:
   flutter:
     sdk: flutter
-  camera: ^0.10.5+5
-  google_mlkit_image_labeling: ^0.9.0
-  permission_handler: ^11.0.1
+
+  # Camera (AGP + Dart 3 compatible)
+  camera: ^0.11.3
+
+  # ML Kit (MUST be aligned)
+  google_mlkit_commons: ^0.11.0
+  google_mlkit_image_labeling: ^0.14.1
+
+  # Permissions
+  permission_handler: ^12.0.1
+
+  # Utilities
   image_picker: ^1.0.4
+  shared_preferences: ^2.2.2
+  url_launcher: ^6.2.5
+
+  cupertino_icons: ^1.0.8
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

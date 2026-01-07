@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'route_suggestion.dart';
 import 'all_destinations_page.dart';
 import 'destination_details_page.dart';
+import 'ar_scanner_page.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -149,22 +150,19 @@ class HomeState extends State<Home> {
         children: [
           Expanded(
             child: _buildActionCard(
-              icon:
-                  "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/ey1o4os6_expires_30_days.png",
+              icon: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/ey1o4os6_expires_30_days.png",
               title: "Launch AR",
               subtitle: "Scan landmarks",
               colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
               onTap: () {
-                print('Navigate to AR Scanner');
+                _navigateToPage(context, const ARScannerPage());
               },
             ),
           ),
           const SizedBox(width: 16),
-
           Expanded(
             child: _buildActionCard(
-              icon:
-                  "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/bh6ra67r_expires_30_days.png",
+              icon: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/bh6ra67r_expires_30_days.png",
               title: "AI Chatbot",
               subtitle: "Ask anything",
               colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
@@ -177,6 +175,7 @@ class HomeState extends State<Home> {
       ),
     );
   }
+  
 
   Widget _buildActionCard({
     required String icon,
