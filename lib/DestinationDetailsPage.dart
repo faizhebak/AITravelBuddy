@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DestinationDetailsPage extends StatelessWidget {
   final String title;
   final String image;
+  final String maps;
   final String location;
   final String locationIcon;
   final String description;
@@ -10,6 +12,7 @@ class DestinationDetailsPage extends StatelessWidget {
   const DestinationDetailsPage({
     super.key,
     required this.title,
+    this.maps = '',
     required this.image,
     required this.location,
     required this.locationIcon,
@@ -70,6 +73,38 @@ class DestinationDetailsPage extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
+                    const SizedBox(height: 20),
+                    if (maps.isNotEmpty) ...[
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFA51212),
+                        ),
+                        onPressed: () async {
+                          final uri = Uri.tryParse(maps);
+                          if (uri == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Invalid map URL.')),
+                            );
+                            return;
+                          }
+                          try {
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Could not open maps.')),
+                              );
+                            }
+                          } catch (_) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Failed to open maps.')),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.map),
+                        label: const Text('Open in Maps'),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -378,6 +378,7 @@ class HomeState extends State<Home> {
         'image':
             "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/rl48p2ix_expires_30_days.png",
         'title': "Petronas Twin Towers",
+        'maps' : "https://maps.app.goo.gl/vC1x3UMcyq8xhdCr7",
         'location': "Kuala Lumpur",
         'locationIcon':
             "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/l6hfg72q_expires_30_days.png",
@@ -387,6 +388,7 @@ class HomeState extends State<Home> {
         'image':
             "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/bvg8eil6_expires_30_days.png",
         'title': "Batu Caves",
+        'maps' : "https://maps.app.goo.gl/ttVUoK54PRAxa1aJ9",
         'location': "Selangor",
         'locationIcon':
             "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/ch4tsc0k_expires_30_days.png",
@@ -441,6 +443,7 @@ class HomeState extends State<Home> {
                         context,
                         DestinationDetailsPage(
                           title: dest['title'] as String,
+                          maps: dest['maps'] as String,
                           image: dest['image'] as String,
                           location: dest['location'] as String,
                           locationIcon: dest['locationIcon'] as String,
@@ -458,6 +461,7 @@ class HomeState extends State<Home> {
                           context,
                           DestinationDetailsPage(
                             title: dest['title'] as String,
+                            maps: dest['maps'] as String,
                             image: dest['image'] as String,
                             location: dest['location'] as String,
                             locationIcon: dest['locationIcon'] as String,
