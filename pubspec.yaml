@@ -42,6 +42,9 @@ dependencies:
 
   # Camera (AGP + Dart 3 compatible)
   camera: ^0.11.3
+  http: ^1.1.0
+  uuid: ^4.2.1
+  # image_picker: ^1.0.0  # For image uploads
 
   # ML Kit (MUST be aligned)
   google_mlkit_commons: ^0.11.0

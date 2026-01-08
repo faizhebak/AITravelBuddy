@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'presentation/home.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 
 void main() {
   runApp(const MyApp());
@@ -7,6 +10,22 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
+  void testBackend() async {
+  try {
+    final url = Uri.parse('http://10.0.2.2:8000/api/test'); // emulator IP
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      print('Backend reachable: ${data['message']}');
+    } else {
+      print('Backend error: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error connecting to backend: $e');
+  }
+}
 
   // This widget is the root of your application.
   @override
@@ -33,7 +52,7 @@ class MyApp extends StatelessWidget {
           seedColor: const Color.fromARGB(255, 196, 12, 12),
         ),
       ),
-      home: Home(),
+      home: const Home(),
     );
   }
 }
