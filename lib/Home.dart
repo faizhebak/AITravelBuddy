@@ -62,7 +62,7 @@ class HomeState extends State<Home> {
                       children: [
                         _buildHeader(),
                         _buildMainContent(context),
-                        _buildBottomNavigation(context),
+                        _buildBottomNavigation(),
                       ],
                     ),
                   ),
@@ -602,63 +602,46 @@ class HomeState extends State<Home> {
     );
   }
 
-  Widget _buildBottomNavigation(BuildContext context) {
+ Widget _buildBottomNavigation() {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF121212),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0x40000000),
-            blurRadius: 50,
-            offset: const Offset(0, -25),
-          ),
-        ],
       ),
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildNavItem(
-            icon:
-                "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/rcl0gtkr_expires_30_days.png",
-            label: "Home",
-            isActive: true,
-            onTap: () {},
+            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/rcl0gtkr_expires_30_days.png",
+            "Home",
+            false,
+            () => Navigator.pop(context),
           ),
-
           _buildNavItem(
-            icon:
-                "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/k9kjfm62_expires_30_days.png",
-            label: "AR Scan",
-            isActive: false,
-            onTap: () {
-              print('Navigate to AR Scan');
-            },
+            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/k9kjfm62_expires_30_days.png",
+            "AR Scan",
+            false,
+            () => Navigator.pop(context),
           ),
-
           _buildNavItem(
-            icon:
-                "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/zsxbv0wr_expires_30_days.png",
-            label: "Chat AI",
-            isActive: false,
-            onTap: () {
-              _navigateToPage(context, const RouteSuggestion());
-            },
+            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/nyaet7u9_expires_30_days.png",
+            "Chat AI",
+            true,
+            () {},
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem({
-    required String icon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildNavItem(
+    String icon,
+    String label,
+    bool isActive,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: isActive
             ? BoxDecoration(
@@ -671,24 +654,20 @@ class HomeState extends State<Home> {
                   ),
                 ],
                 gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
                   colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
                 ),
               )
             : null,
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 11),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.network(icon, width: 23, height: 23, fit: BoxFit.contain),
+            Image.network(icon, width: 23, height: 23),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isActive
-                    ? const Color(0xFFFFFFFF)
-                    : const Color(0xFFB3B3B3),
+                color: isActive ? Colors.white : const Color(0xFFB3B3B3),
                 fontSize: 12,
               ),
             ),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'dart:async';
-
 import '../data/chatbot_models.dart';
 import 'ai_settings_screen.dart';
 import '../services/settings_service.dart';
+import '../services/chat_api_service.dart';
+import '../presentation/ar_scanner_page.dart';
 
 class RouteSuggestion extends StatefulWidget {
   const RouteSuggestion({super.key});
@@ -52,29 +55,77 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     });
   }
 
+  // void _createNewSession() {
+  //   final newSession = ChatSession(
+  //     id: DateTime.now().millisecondsSinceEpoch.toString(),
+  //     title: 'New Chat',
+  //     createdAt: DateTime.now(),
+  //     lastActiveAt: DateTime.now(),
+  //     messages: [],
+  //     aiSettings: _globalSettings,
+  //   );
+
+  //   newSession.messages.add(
+  //     ChatMessage(
+  //       text:
+  //           "Selamat datang! 👋 I'm your Malaysia tourism AI assistant. I can help you with:\n\n🏨 Hotel Booking\n🗺️ Route Suggestions\n🍜 Food Recommendations\n📸 Food Recognition\n🎭 Cultural Insights\n\nWhat would you like to explore today?",
+  //       isUser: false,
+  //       timestamp: DateTime.now(),
+  //     ),
+  //   );
+
+  //   setState(() {
+  //     _currentSession = newSession;
+  //     _allSessions.insert(0, newSession);
+  //   });
+  // }
+
   void _createNewSession() {
-    final newSession = ChatSession(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: 'New Chat',
-      createdAt: DateTime.now(),
-      lastActiveAt: DateTime.now(),
-      messages: [],
-      aiSettings: _globalSettings,
-    );
+  final newSession = ChatSession(
+    id: DateTime.now().millisecondsSinceEpoch.toString(),
+    title: 'New Chat',
+    createdAt: DateTime.now(),
+    lastActiveAt: DateTime.now(),
+    messages: [],
+    aiSettings: _globalSettings,
+  );
 
-    newSession.messages.add(
-      ChatMessage(
-        text:
-            "Selamat datang! 👋 I'm your Malaysia tourism AI assistant. I can help you with:\n\n🏨 Hotel Booking\n🗺️ Route Suggestions\n🍜 Food Recommendations\n📸 Food Recognition\n🎭 Cultural Insights\n\nWhat would you like to explore today?",
-        isUser: false,
-        timestamp: DateTime.now(),
-      ),
-    );
+  setState(() {
+    _currentSession = newSession;
+    _allSessions.insert(0, newSession);
+  });
 
-    setState(() {
-      _currentSession = newSession;
-      _allSessions.insert(0, newSession);
-    });
+  // Load initial greeting from backend
+  _sendInitialGreeting();
+  }
+  // void _sendMessage() {
+  //   if (_messageController.text.trim().isEmpty || _currentSession == null) {
+  //     return;
+  //   }
+
+  //   final userMessage = _messageController.text.trim();
+  //   setState(() {
+  //     _currentSession!.messages.add(
+  //       ChatMessage(text: userMessage, isUser: true, timestamp: DateTime.now()),
+  //     );
+  //     _currentSession!.lastActiveAt = DateTime.now();
+  //     if (_currentSession!.messages.length == 2) {
+  //       _currentSession!.title = _generateTitle(userMessage);
+  //     }
+  //     _messageController.clear();
+  //     _isTyping = true;
+  //   });
+
+  //   _scrollToBottom();
+  //   // _simulateAIResponse(userMessage);
+  //   _sendMessageToBackend(userMessage);
+  // }
+
+
+
+  // Update _sendMessage method to use the new backend call:
+  void _navigateToPage(BuildContext context, Widget page) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => page));
   }
 
   void _sendMessage() {
@@ -83,20 +134,30 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     }
 
     final userMessage = _messageController.text.trim();
+    
     setState(() {
+      // Add user message
       _currentSession!.messages.add(
-        ChatMessage(text: userMessage, isUser: true, timestamp: DateTime.now()),
+        ChatMessage(
+          text: userMessage,
+          isUser: true,
+          timestamp: DateTime.now(),
+        ),
       );
       _currentSession!.lastActiveAt = DateTime.now();
+      
+      // Update title if this is the first message
       if (_currentSession!.messages.length == 2) {
         _currentSession!.title = _generateTitle(userMessage);
       }
+      
       _messageController.clear();
-      _isTyping = true;
     });
 
     _scrollToBottom();
-    _simulateAIResponse(userMessage);
+    
+    // Send to backend instead of simulating
+    _sendMessageToBackend(userMessage);
   }
 
   String _generateTitle(String message) {
@@ -106,28 +167,174 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     return message.split(' ').take(3).join(' ');
   }
 
-  void _simulateAIResponse(String userMessage) {
-    Future.delayed(const Duration(milliseconds: 1500), () {
+  // void _simulateAIResponse(String userMessage) {
+  //   Future.delayed(const Duration(milliseconds: 1500), () {
+  //     if (!mounted) return;
+
+  //     bool hasRouteCard = userMessage.toLowerCase().contains('route');
+
+  //     setState(() {
+  //       _isTyping = false;
+  //       _currentSession!.messages.add(
+  //         ChatMessage(
+  //           text: hasRouteCard
+  //               ? "Here's a personalized 5-stop heritage route in Melaka! 🗺️"
+  //               : "Great question! 😊 Let me help you with that. Malaysia has incredible ${userMessage.toLowerCase().contains('food') ? 'cuisine' : 'attractions'}!",
+  //           isUser: false,
+  //           timestamp: DateTime.now(),
+  //           hasRouteCard: hasRouteCard,
+  //         ),
+  //       );
+  //     });
+
+  //     _scrollToBottom();
+  //   });
+  // }
+
+
+  
+  void _sendMessageToBackend(String userMessage) async {
+    if (!mounted) return;
+
+    // Show typing indicator
+    setState(() {
+      _isTyping = true;
+    });
+
+    try {
+      // Create a temporary message for streaming response
+      final streamingMessage = ChatMessage(
+        text: '',
+        isUser: false,
+        timestamp: DateTime.now(),
+        hasRouteCard: userMessage.toLowerCase().contains('route'),
+      );
+
+      // Add the empty message to the list
+      setState(() {
+        _currentSession!.messages.add(streamingMessage);
+        _isTyping = false;
+      });
+
+      // Get the index of this message
+      final messageIndex = _currentSession!.messages.length - 1;
+
+      // Stream the response
+      await for (final chunk in ChatApiService.sendMessage(
+        sessionId: _currentSession!.id,
+        userMessage: userMessage,
+      )) {
+        if (!mounted) break;
+
+        setState(() {
+          // Update the message text with new chunk
+          _currentSession!.messages[messageIndex] = ChatMessage(
+            text: _currentSession!.messages[messageIndex].text + chunk,
+            isUser: false,
+            timestamp: streamingMessage.timestamp,
+            hasRouteCard: streamingMessage.hasRouteCard,
+          );
+        });
+
+        // Auto-scroll as text comes in
+        _scrollToBottom();
+      }
+
+      // Mark as complete
+      if (mounted) {
+        setState(() {
+          _currentSession!.lastActiveAt = DateTime.now();
+        });
+      }
+    } catch (e) {
+      print('Error streaming message: $e');
+      
       if (!mounted) return;
-
-      bool hasRouteCard = userMessage.toLowerCase().contains('route');
-
+      
       setState(() {
         _isTyping = false;
         _currentSession!.messages.add(
           ChatMessage(
-            text: hasRouteCard
-                ? "Here's a personalized 5-stop heritage route in Melaka! 🗺️"
-                : "Great question! 😊 Let me help you with that. Malaysia has incredible ${userMessage.toLowerCase().contains('food') ? 'cuisine' : 'attractions'}!",
+            text: 'Sorry, I encountered an error. Please check your connection and try again.',
             isUser: false,
             timestamp: DateTime.now(),
-            hasRouteCard: hasRouteCard,
           ),
         );
       });
 
-      _scrollToBottom();
+      // Show error to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Connection error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+
+  // Add a method to send initial greeting
+  void _sendInitialGreeting() async {
+    if (_currentSession == null || _currentSession!.messages.length > 1) {
+      return;
+    }
+
+    setState(() {
+      _isTyping = true;
     });
+
+    try {
+      // Create streaming message for welcome
+      final streamingMessage = ChatMessage(
+        text: '',
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+
+      setState(() {
+        // Replace the hardcoded welcome message
+        _currentSession!.messages.clear();
+        _currentSession!.messages.add(streamingMessage);
+        _isTyping = false;
+      });
+
+      final messageIndex = 0;
+
+      // Stream the initial greeting
+      await for (final chunk in ChatApiService.sendMessage(
+        sessionId: _currentSession!.id,
+        userMessage: 'Hello!', // Trigger backend greeting
+      )) {
+        if (!mounted) break;
+
+        setState(() {
+          _currentSession!.messages[messageIndex] = ChatMessage(
+            text: _currentSession!.messages[messageIndex].text + chunk,
+            isUser: false,
+            timestamp: streamingMessage.timestamp,
+          );
+        });
+
+        _scrollToBottom();
+      }
+    } catch (e) {
+      print('Error loading initial greeting: $e');
+      
+      // Fallback to hardcoded message
+      if (mounted) {
+        setState(() {
+          _isTyping = false;
+          _currentSession!.messages.clear();
+          _currentSession!.messages.add(
+            ChatMessage(
+              text: "Selamat datang! 👋 I'm your Malaysia tourism AI assistant. I can help you with:\n\n🏨 Hotel Booking\n🗺️ Route Suggestions\n🍜 Food Recommendations\n📸 Food Recognition\n🎭 Cultural Insights\n\nWhat would you like to explore today?",
+              isUser: false,
+              timestamp: DateTime.now(),
+            ),
+          );
+        });
+      }
+    }
   }
 
   void _scrollToBottom() {
@@ -163,28 +370,53 @@ class RouteSuggestionState extends State<RouteSuggestion> {
               ),
             ),
             const SizedBox(height: 20),
+            // ListTile(
+            //   leading: const Icon(Icons.camera_alt, color: Colors.white),
+            //   title: const Text(
+            //     'Take Photo',
+            //     style: TextStyle(color: Colors.white),
+            //   ),
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //     print('Open camera');
+                
+            //   },
+            // ),
+            // ListTile(
+            //   leading: const Icon(Icons.photo_library, color: Colors.white),
+            //   title: const Text(
+            //     'Choose from Gallery',
+            //     style: TextStyle(color: Colors.white),
+            //   ),
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //     print('Open gallery');
+            //   },
+            // ),
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.white),
               title: const Text(
                 'Take Photo',
                 style: TextStyle(color: Colors.white),
               ),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                print('Open camera');
+                await _takePhoto();
               },
             ),
+
             ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.white),
               title: const Text(
                 'Choose from Gallery',
                 style: TextStyle(color: Colors.white),
               ),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                print('Open gallery');
+                await _chooseFromGallery();
               },
             ),
+
             ListTile(
               leading: const Icon(Icons.close, color: Colors.white),
               title: const Text(
@@ -198,6 +430,179 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       ),
     );
   }
+
+  Future<void> _takePhoto() async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85, // Compress image
+        maxWidth: 1024,
+        maxHeight: 1024,
+      );
+
+      if (photo != null) {
+        final File imageFile = File(photo.path);
+        
+        // Add image to chat as user message
+        setState(() {
+          _currentSession!.messages.add(
+            ChatMessage(
+              text: '[Image captured]',
+              isUser: true,
+              timestamp: DateTime.now(),
+              type: MessageType.image,
+              imageUrl: photo.path, // Local file path
+            ),
+          );
+          _currentSession!.lastActiveAt = DateTime.now();
+        });
+
+        _scrollToBottom();
+
+        // TODO: Send image to backend for recognition
+        _sendImageToBackend(imageFile);
+      }
+    } catch (e) {
+      print('Error taking photo: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to take photo: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _chooseFromGallery() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1024,
+        maxHeight: 1024,
+      );
+
+      if (image != null) {
+        final File imageFile = File(image.path);
+        
+        // Add image to chat as user message
+        setState(() {
+          _currentSession!.messages.add(
+            ChatMessage(
+              text: '[Image selected]',
+              isUser: true,
+              timestamp: DateTime.now(),
+              type: MessageType.image,
+              imageUrl: image.path,
+            ),
+          );
+          _currentSession!.lastActiveAt = DateTime.now();
+        });
+
+        _scrollToBottom();
+
+        // TODO: Send image to backend for recognition
+        _sendImageToBackend(imageFile);
+      }
+    } catch (e) {
+      print('Error selecting image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to select image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Method to send image to backend
+  Future<void> _sendImageToBackend(File imageFile) async {
+    if (!mounted) return;
+
+    setState(() {
+      _isTyping = true;
+    });
+
+    try {
+      // Create streaming message for AI response
+      final streamingMessage = ChatMessage(
+        text: '',
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+
+      setState(() {
+        _currentSession!.messages.add(streamingMessage);
+        _isTyping = false;
+      });
+
+      final messageIndex = _currentSession!.messages.length - 1;
+
+      // TODO: Replace with actual image recognition API call
+      // For now, simulate a response
+      await Future.delayed(const Duration(seconds: 2));
+      
+      setState(() {
+        _currentSession!.messages[messageIndex] = ChatMessage(
+          text: '🖼️ Image Analysis:\n\nI can see this is an image! In the production version, I would analyze this image and provide information about Malaysian landmarks, food, or cultural items shown.\n\nWould you like to know more about what\'s in this image?',
+          isUser: false,
+          timestamp: streamingMessage.timestamp,
+        );
+      });
+
+      /* PRODUCTION CODE - Uncomment when backend is ready:
+      
+      // Convert image to base64 or multipart
+      final bytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(bytes);
+      
+      // Stream the image recognition response
+      await for (final chunk in ChatApiService.sendImageMessage(
+        sessionId: _currentSession!.id,
+        imageBase64: base64Image,
+      )) {
+        if (!mounted) break;
+
+        setState(() {
+          _currentSession!.messages[messageIndex] = ChatMessage(
+            text: _currentSession!.messages[messageIndex].text + chunk,
+            isUser: false,
+            timestamp: streamingMessage.timestamp,
+          );
+        });
+
+        _scrollToBottom();
+      }
+      */
+      
+      _scrollToBottom();
+      
+    } catch (e) {
+      print('Error sending image: $e');
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isTyping = false;
+        _currentSession!.messages.add(
+          ChatMessage(
+            text: 'Sorry, I couldn\'t analyze the image. Please try again.',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Image analysis failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -448,29 +853,51 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        children: [
-          if (!message.isUser) ...[
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(100),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
-                ),
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      children: [
+        if (!message.isUser) ...[
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(100),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
               ),
-              padding: const EdgeInsets.all(8),
-              margin: const EdgeInsets.only(right: 9),
-              child: const Text("👔", style: TextStyle(fontSize: 18)),
             ),
-          ],
-          Flexible(
-            child: Column(
-              crossAxisAlignment: message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
+            padding: const EdgeInsets.all(8),
+            margin: const EdgeInsets.only(right: 9),
+            child: const Text("👔", style: TextStyle(fontSize: 18)),
+          ),
+        ],
+        Flexible(
+          child: Column(
+            crossAxisAlignment: message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              // Show image if message has one
+              if (message.type == MessageType.image && message.imageUrl != null) ...[
+                Container(
+                  margin: EdgeInsets.only(
+                    right: message.isUser ? 0 : 32,
+                    left: message.isUser ? 32 : 0,
+                    bottom: 8,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.file(
+                      File(message.imageUrl!),
+                      width: 200,
+                      height: 200,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ],
+              
+              // Text bubble
+              if (message.text.isNotEmpty) ...[
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
@@ -510,35 +937,37 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                     ],
                   ),
                 ),
-                if (message.hasRouteCard) ...[
-                  const SizedBox(height: 8),
-                  _buildRouteCard(),
-                ],
               ],
+              
+              if (message.hasRouteCard) ...[
+                const SizedBox(height: 8),
+                _buildRouteCard(),
+              ],
+            ],
+          ),
+        ),
+        if (message.isUser) ...[
+          const SizedBox(width: 8),
+          Container(
+            width: 31,
+            height: 31,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(100),
+              color: const Color(0xFF2A2A2A),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: Image.network(
+                "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/5b0u8lbp_expires_30_days.png",
+                fit: BoxFit.cover,
+              ),
             ),
           ),
-          if (message.isUser) ...[
-            const SizedBox(width: 8),
-            Container(
-              width: 31,
-              height: 31,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(100),
-                color: const Color(0xFF2A2A2A),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(100),
-                child: Image.network(
-                  "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/5b0u8lbp_expires_30_days.png",
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ],
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 
   Widget _buildRouteCard() {
     return Container(
@@ -771,6 +1200,8 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       ),
     );
   }
+final ImagePicker _picker = ImagePicker();
+File? _image;
 
   Widget _buildBottomNavigation() {
     return Container(
@@ -791,7 +1222,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
             "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/k9kjfm62_expires_30_days.png",
             "AR Scan",
             false,
-            () => print('AR Scan'),
+            () => _navigateToPage(context, const ARScannerPage()),
           ),
           _buildNavItem(
             "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/nyaet7u9_expires_30_days.png",
