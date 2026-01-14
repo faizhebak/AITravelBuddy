@@ -31,7 +31,11 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+build/
+test/coverage/
+
+# FVM
+.fvm/
 
 # Symbolication related
 app.*.symbols
