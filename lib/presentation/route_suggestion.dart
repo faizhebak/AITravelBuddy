@@ -19,6 +19,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final ImagePicker _picker = ImagePicker();
 
   List<ChatSession> _allSessions = [];
   ChatSession? _currentSession;
@@ -81,22 +82,22 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   // }
 
   void _createNewSession() {
-  final newSession = ChatSession(
-    id: DateTime.now().millisecondsSinceEpoch.toString(),
-    title: 'New Chat',
-    createdAt: DateTime.now(),
-    lastActiveAt: DateTime.now(),
-    messages: [],
-    aiSettings: _globalSettings,
-  );
+    final newSession = ChatSession(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: 'New Chat',
+      createdAt: DateTime.now(),
+      lastActiveAt: DateTime.now(),
+      messages: [],
+      aiSettings: _globalSettings,
+    );
 
-  setState(() {
-    _currentSession = newSession;
-    _allSessions.insert(0, newSession);
-  });
+    setState(() {
+      _currentSession = newSession;
+      _allSessions.insert(0, newSession);
+    });
 
-  // Load initial greeting from backend
-  _sendInitialGreeting();
+    // Load initial greeting from backend
+    _sendInitialGreeting();
   }
   // void _sendMessage() {
   //   if (_messageController.text.trim().isEmpty || _currentSession == null) {
@@ -121,8 +122,6 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   //   _sendMessageToBackend(userMessage);
   // }
 
-
-
   // Update _sendMessage method to use the new backend call:
   void _navigateToPage(BuildContext context, Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (context) => page));
@@ -134,28 +133,24 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     }
 
     final userMessage = _messageController.text.trim();
-    
+
     setState(() {
       // Add user message
       _currentSession!.messages.add(
-        ChatMessage(
-          text: userMessage,
-          isUser: true,
-          timestamp: DateTime.now(),
-        ),
+        ChatMessage(text: userMessage, isUser: true, timestamp: DateTime.now()),
       );
       _currentSession!.lastActiveAt = DateTime.now();
-      
+
       // Update title if this is the first message
       if (_currentSession!.messages.length == 2) {
         _currentSession!.title = _generateTitle(userMessage);
       }
-      
+
       _messageController.clear();
     });
 
     _scrollToBottom();
-    
+
     // Send to backend instead of simulating
     _sendMessageToBackend(userMessage);
   }
@@ -191,8 +186,6 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   //   });
   // }
 
-
-  
   void _sendMessageToBackend(String userMessage) async {
     if (!mounted) return;
 
@@ -222,7 +215,9 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       // Stream the response
       await for (final chunk in ChatApiService.sendMessage(
         sessionId: _currentSession!.id,
+        userId: await _getUserId(),
         userMessage: userMessage,
+        userPreference: _currentSession!.aiSettings.toApiPreference(),
       )) {
         if (!mounted) break;
 
@@ -248,14 +243,15 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       }
     } catch (e) {
       print('Error streaming message: $e');
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _isTyping = false;
         _currentSession!.messages.add(
           ChatMessage(
-            text: 'Sorry, I encountered an error. Please check your connection and try again.',
+            text:
+                'Sorry, I encountered an error. Please check your connection and try again.',
             isUser: false,
             timestamp: DateTime.now(),
           ),
@@ -271,7 +267,6 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       );
     }
   }
-
 
   // Add a method to send initial greeting
   void _sendInitialGreeting() async {
@@ -303,7 +298,9 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       // Stream the initial greeting
       await for (final chunk in ChatApiService.sendMessage(
         sessionId: _currentSession!.id,
+        userId: await _getUserId(),
         userMessage: 'Hello!', // Trigger backend greeting
+        userPreference: _currentSession!.aiSettings.toApiPreference(),
       )) {
         if (!mounted) break;
 
@@ -319,7 +316,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       }
     } catch (e) {
       print('Error loading initial greeting: $e');
-      
+
       // Fallback to hardcoded message
       if (mounted) {
         setState(() {
@@ -327,7 +324,8 @@ class RouteSuggestionState extends State<RouteSuggestion> {
           _currentSession!.messages.clear();
           _currentSession!.messages.add(
             ChatMessage(
-              text: "Selamat datang! 👋 I'm your Malaysia tourism AI assistant. I can help you with:\n\n🏨 Hotel Booking\n🗺️ Route Suggestions\n🍜 Food Recommendations\n📸 Food Recognition\n🎭 Cultural Insights\n\nWhat would you like to explore today?",
+              text:
+                  "Selamat datang! 👋 I'm your Malaysia tourism AI assistant. I can help you with:\n\n🏨 Hotel Booking\n🗺️ Route Suggestions\n🍜 Food Recommendations\n📸 Food Recognition\n🎭 Cultural Insights\n\nWhat would you like to explore today?",
               isUser: false,
               timestamp: DateTime.now(),
             ),
@@ -379,7 +377,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
             //   onTap: () {
             //     Navigator.pop(context);
             //     print('Open camera');
-                
+
             //   },
             // ),
             // ListTile(
@@ -442,7 +440,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
 
       if (photo != null) {
         final File imageFile = File(photo.path);
-        
+
         // Add image to chat as user message
         setState(() {
           _currentSession!.messages.add(
@@ -484,7 +482,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
 
       if (image != null) {
         final File imageFile = File(image.path);
-        
+
         // Add image to chat as user message
         setState(() {
           _currentSession!.messages.add(
@@ -541,10 +539,11 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       // TODO: Replace with actual image recognition API call
       // For now, simulate a response
       await Future.delayed(const Duration(seconds: 2));
-      
+
       setState(() {
         _currentSession!.messages[messageIndex] = ChatMessage(
-          text: '🖼️ Image Analysis:\n\nI can see this is an image! In the production version, I would analyze this image and provide information about Malaysian landmarks, food, or cultural items shown.\n\nWould you like to know more about what\'s in this image?',
+          text:
+              '🖼️ Image Analysis:\n\nI can see this is an image! In the production version, I would analyze this image and provide information about Malaysian landmarks, food, or cultural items shown.\n\nWould you like to know more about what\'s in this image?',
           isUser: false,
           timestamp: streamingMessage.timestamp,
         );
@@ -574,14 +573,13 @@ class RouteSuggestionState extends State<RouteSuggestion> {
         _scrollToBottom();
       }
       */
-      
+
       _scrollToBottom();
-      
     } catch (e) {
       print('Error sending image: $e');
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _isTyping = false;
         _currentSession!.messages.add(
@@ -601,8 +599,6 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       );
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -624,9 +620,11 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                         vertical: 16,
                       ),
                       itemCount:
-                          _currentSession!.messages.length + (_isTyping ? 1 : 0),
+                          _currentSession!.messages.length +
+                          (_isTyping ? 1 : 0),
                       itemBuilder: (context, index) {
-                        if (_isTyping && index == _currentSession!.messages.length) {
+                        if (_isTyping &&
+                            index == _currentSession!.messages.length) {
                           return _buildTypingIndicator();
                         }
                         return _buildMessageBubble(
@@ -853,121 +851,130 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-      children: [
-        if (!message.isUser) ...[
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(100),
-              gradient: const LinearGradient(
-                colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: message.isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        children: [
+          if (!message.isUser) ...[
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(100),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                ),
               ),
+              padding: const EdgeInsets.all(8),
+              margin: const EdgeInsets.only(right: 9),
+              child: const Text("👔", style: TextStyle(fontSize: 18)),
             ),
-            padding: const EdgeInsets.all(8),
-            margin: const EdgeInsets.only(right: 9),
-            child: const Text("👔", style: TextStyle(fontSize: 18)),
-          ),
-        ],
-        Flexible(
-          child: Column(
-            crossAxisAlignment: message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-            children: [
-              // Show image if message has one
-              if (message.type == MessageType.image && message.imageUrl != null) ...[
-                Container(
-                  margin: EdgeInsets.only(
-                    right: message.isUser ? 0 : 32,
-                    left: message.isUser ? 32 : 0,
-                    bottom: 8,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.file(
-                      File(message.imageUrl!),
-                      width: 200,
-                      height: 200,
-                      fit: BoxFit.cover,
+          ],
+          Flexible(
+            child: Column(
+              crossAxisAlignment: message.isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                // Show image if message has one
+                if (message.type == MessageType.image &&
+                    message.imageUrl != null) ...[
+                  Container(
+                    margin: EdgeInsets.only(
+                      right: message.isUser ? 0 : 32,
+                      left: message.isUser ? 32 : 0,
+                      bottom: 8,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.file(
+                        File(message.imageUrl!),
+                        width: 200,
+                        height: 200,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
-                ),
-              ],
-              
-              // Text bubble
-              if (message.text.isNotEmpty) ...[
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: message.isUser ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+                ],
+
+                // Text bubble
+                if (message.text.isNotEmpty) ...[
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: message.isUser
+                            ? const Color(0xFFA51212)
+                            : const Color(0xFF2A2A2A),
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: message.isUser
+                          ? const LinearGradient(
+                              colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                            )
+                          : null,
+                      color: message.isUser ? null : const Color(0xFF1E1E1E),
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: message.isUser
-                        ? const LinearGradient(
-                            colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
-                          )
-                        : null,
-                    color: message.isUser ? null : const Color(0xFF1E1E1E),
-                  ),
-                  padding: const EdgeInsets.all(13),
-                  margin: EdgeInsets.only(
-                    right: message.isUser ? 0 : 32,
-                    left: message.isUser ? 32 : 0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        message.text,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
+                    padding: const EdgeInsets.all(13),
+                    margin: EdgeInsets.only(
+                      right: message.isUser ? 0 : 32,
+                      left: message.isUser ? 32 : 0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          message.text,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _formatTime(message.timestamp),
-                        style: TextStyle(
-                          color: message.isUser ? const Color(0xFFFFFEFE) : const Color(0xFFB3B3B3),
-                          fontSize: 12,
+                        const SizedBox(height: 8),
+                        Text(
+                          _formatTime(message.timestamp),
+                          style: TextStyle(
+                            color: message.isUser
+                                ? const Color(0xFFFFFEFE)
+                                : const Color(0xFFB3B3B3),
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
+
+                if (message.hasRouteCard) ...[
+                  const SizedBox(height: 8),
+                  _buildRouteCard(),
+                ],
               ],
-              
-              if (message.hasRouteCard) ...[
-                const SizedBox(height: 8),
-                _buildRouteCard(),
-              ],
-            ],
-          ),
-        ),
-        if (message.isUser) ...[
-          const SizedBox(width: 8),
-          Container(
-            width: 31,
-            height: 31,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(100),
-              color: const Color(0xFF2A2A2A),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: Image.network(
-                "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/5b0u8lbp_expires_30_days.png",
-                fit: BoxFit.cover,
+          ),
+          if (message.isUser) ...[
+            const SizedBox(width: 8),
+            Container(
+              width: 31,
+              height: 31,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(100),
+                color: const Color(0xFF2A2A2A),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(100),
+                child: Image.network(
+                  "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/5b0u8lbp_expires_30_days.png",
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-          ),
+          ],
         ],
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 
   Widget _buildRouteCard() {
     return Container(
@@ -1200,14 +1207,10 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       ),
     );
   }
-final ImagePicker _picker = ImagePicker();
-File? _image;
 
   Widget _buildBottomNavigation() {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF121212),
-      ),
+      decoration: BoxDecoration(color: const Color(0xFF121212)),
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,

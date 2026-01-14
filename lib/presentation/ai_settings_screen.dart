@@ -121,7 +121,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           color: isSelected ? null : const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+            color: isSelected
+                ? const Color(0xFFA51212)
+                : const Color(0xFF2A2A2A),
             width: 2,
           ),
         ),
@@ -236,7 +238,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           color: const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+            color: isSelected
+                ? const Color(0xFFA51212)
+                : const Color(0xFF2A2A2A),
             width: 2,
           ),
         ),
@@ -248,12 +252,18 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+                  color: isSelected
+                      ? const Color(0xFFA51212)
+                      : const Color(0xFF2A2A2A),
                   width: 2,
                 ),
-                color: isSelected ? const Color(0xFFA51212) : Colors.transparent,
+                color: isSelected
+                    ? const Color(0xFFA51212)
+                    : Colors.transparent,
               ),
-              child: isSelected ? const Icon(Icons.circle, size: 12, color: Colors.white) : null,
+              child: isSelected
+                  ? const Icon(Icons.circle, size: 12, color: Colors.white)
+                  : null,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -263,9 +273,13 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                   Text(
                     title,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : const Color(0xFFB3B3B3),
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFFB3B3B3),
                       fontSize: 16,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   Text(
@@ -283,17 +297,18 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       ),
     );
   }
-Widget _buildProfessionalismSelector() {
+
+  Widget _buildProfessionalismSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           '💼 Professionalism',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-
-
-
-
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -310,25 +325,25 @@ Widget _buildProfessionalismSelector() {
               dropdownColor: const Color(0xFF1E1E1E),
               style: const TextStyle(color: Colors.white, fontSize: 16),
               items: const [
-                DropdownMenuItem(value: 'casual', child: Text('👕 Casual Traveler Guide')),
-                DropdownMenuItem(value: 'friendly', child: Text('🎽 Friendly Tour Guide')),
-                DropdownMenuItem(value: 'professional', child: Text('💼 Professional Expert')),
-
-
-
-
-
-
-
-
-
+                DropdownMenuItem(
+                  value: 'casual',
+                  child: Text('👕 Casual Traveler Guide'),
+                ),
+                DropdownMenuItem(
+                  value: 'friendly',
+                  child: Text('🎽 Friendly Tour Guide'),
+                ),
+                DropdownMenuItem(
+                  value: 'professional',
+                  child: Text('💼 Professional Expert'),
+                ),
               ],
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
-                    _currentSettings = _currentSettings.copyWith(professionalism: value);
-
-
+                    _currentSettings = _currentSettings.copyWith(
+                      professionalism: value,
+                    );
                   });
                 }
               },
@@ -415,11 +430,17 @@ Widget _buildProfessionalismSelector() {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          gradient: isSelected ? const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)]) : null,
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                )
+              : null,
           color: isSelected ? null : const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+            color: isSelected
+                ? const Color(0xFFA51212)
+                : const Color(0xFF2A2A2A),
             width: 2,
           ),
         ),
@@ -502,7 +523,7 @@ Widget _buildProfessionalismSelector() {
       return "The Petronas Twin Towers are an iconic symbol of Malaysia! 🏙️ Completed in 1998, they were the tallest buildings in the world until 2004. Their design incorporates Islamic geometric patterns, reflecting Malaysia's cultural heritage.";
     } else if (_currentSettings.humorLevel == 3) {
       return "The Petronas Twin Towers are absolutely stunning! 🏙️ Built in 1998, they were the world's tallest buildings until 2004. The Islamic-inspired design is really something special.";
-    } else  {
+    } else {
       return "OMG the Petronas Towers!! 🤩✨ They're like Malaysia's version of Eiffel Tower but DOUBLED! 🏢🏢 And yes, you can walk on that skybridge! 😱☁️";
     }
   }
@@ -520,5 +541,3 @@ extension StringExtension on String {
     return "${this[0].toUpperCase()}${substring(1)}";
   }
 }
-
-
