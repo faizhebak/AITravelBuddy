@@ -56,31 +56,6 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     });
   }
 
-  // void _createNewSession() {
-  //   final newSession = ChatSession(
-  //     id: DateTime.now().millisecondsSinceEpoch.toString(),
-  //     title: 'New Chat',
-  //     createdAt: DateTime.now(),
-  //     lastActiveAt: DateTime.now(),
-  //     messages: [],
-  //     aiSettings: _globalSettings,
-  //   );
-
-  //   newSession.messages.add(
-  //     ChatMessage(
-  //       text:
-  //           "Selamat datang! 👋 I'm your Malaysia tourism AI assistant. I can help you with:\n\n🏨 Hotel Booking\n🗺️ Route Suggestions\n🍜 Food Recommendations\n📸 Food Recognition\n🎭 Cultural Insights\n\nWhat would you like to explore today?",
-  //       isUser: false,
-  //       timestamp: DateTime.now(),
-  //     ),
-  //   );
-
-  //   setState(() {
-  //     _currentSession = newSession;
-  //     _allSessions.insert(0, newSession);
-  //   });
-  // }
-
   void _createNewSession() {
     final newSession = ChatSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -99,28 +74,6 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     // Load initial greeting from backend
     _sendInitialGreeting();
   }
-  // void _sendMessage() {
-  //   if (_messageController.text.trim().isEmpty || _currentSession == null) {
-  //     return;
-  //   }
-
-  //   final userMessage = _messageController.text.trim();
-  //   setState(() {
-  //     _currentSession!.messages.add(
-  //       ChatMessage(text: userMessage, isUser: true, timestamp: DateTime.now()),
-  //     );
-  //     _currentSession!.lastActiveAt = DateTime.now();
-  //     if (_currentSession!.messages.length == 2) {
-  //       _currentSession!.title = _generateTitle(userMessage);
-  //     }
-  //     _messageController.clear();
-  //     _isTyping = true;
-  //   });
-
-  //   _scrollToBottom();
-  //   // _simulateAIResponse(userMessage);
-  //   _sendMessageToBackend(userMessage);
-  // }
 
   // Update _sendMessage method to use the new backend call:
   void _navigateToPage(BuildContext context, Widget page) {
@@ -162,30 +115,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     return message.split(' ').take(3).join(' ');
   }
 
-  // void _simulateAIResponse(String userMessage) {
-  //   Future.delayed(const Duration(milliseconds: 1500), () {
-  //     if (!mounted) return;
-
-  //     bool hasRouteCard = userMessage.toLowerCase().contains('route');
-
-  //     setState(() {
-  //       _isTyping = false;
-  //       _currentSession!.messages.add(
-  //         ChatMessage(
-  //           text: hasRouteCard
-  //               ? "Here's a personalized 5-stop heritage route in Melaka! 🗺️"
-  //               : "Great question! 😊 Let me help you with that. Malaysia has incredible ${userMessage.toLowerCase().contains('food') ? 'cuisine' : 'attractions'}!",
-  //           isUser: false,
-  //           timestamp: DateTime.now(),
-  //           hasRouteCard: hasRouteCard,
-  //         ),
-  //       );
-  //     });
-
-  //     _scrollToBottom();
-  //   });
-  // }
-
+  // New method to send message to backend with streaming response
   void _sendMessageToBackend(String userMessage) async {
     if (!mounted) return;
 
@@ -335,6 +265,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     }
   }
 
+// Method to scroll to bottom of chat
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
@@ -347,6 +278,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     });
   }
 
+  // Method to handle image upload
   void _handleImageUpload() {
     showModalBottomSheet(
       context: context,
@@ -368,29 +300,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
               ),
             ),
             const SizedBox(height: 20),
-            // ListTile(
-            //   leading: const Icon(Icons.camera_alt, color: Colors.white),
-            //   title: const Text(
-            //     'Take Photo',
-            //     style: TextStyle(color: Colors.white),
-            //   ),
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     print('Open camera');
-
-            //   },
-            // ),
-            // ListTile(
-            //   leading: const Icon(Icons.photo_library, color: Colors.white),
-            //   title: const Text(
-            //     'Choose from Gallery',
-            //     style: TextStyle(color: Colors.white),
-            //   ),
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     print('Open gallery');
-            //   },
-            // ),
+            
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.white),
               title: const Text(
@@ -429,6 +339,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     );
   }
 
+  // Method to take photo using camera
   Future<void> _takePhoto() async {
     try {
       final XFile? photo = await _picker.pickImage(
@@ -471,6 +382,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     }
   }
 
+  // Method to choose image from gallery
   Future<void> _chooseFromGallery() async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -537,17 +449,36 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       final messageIndex = _currentSession!.messages.length - 1;
 
       // TODO: Replace with actual image recognition API call
+      // Stream the initial greeting
+      await for (final chunk in ChatApiService.sendMessage(
+        sessionId: _currentSession!.id,
+        userId: await _getUserId(),
+        userMessage: 'Hello!', // Trigger backend greeting
+        userPreference: _currentSession!.aiSettings.toApiPreference(),
+      )) {
+        if (!mounted) break;
+
+        setState(() {
+          _currentSession!.messages[messageIndex] = ChatMessage(
+            text: _currentSession!.messages[messageIndex].text + chunk,
+            isUser: false,
+            timestamp: streamingMessage.timestamp,
+          );
+        });
+
+        _scrollToBottom();
+      }
       // For now, simulate a response
       await Future.delayed(const Duration(seconds: 2));
 
-      setState(() {
-        _currentSession!.messages[messageIndex] = ChatMessage(
-          text:
-              '🖼️ Image Analysis:\n\nI can see this is an image! In the production version, I would analyze this image and provide information about Malaysian landmarks, food, or cultural items shown.\n\nWould you like to know more about what\'s in this image?',
-          isUser: false,
-          timestamp: streamingMessage.timestamp,
-        );
-      });
+      // setState(() {
+      //   _currentSession!.messages[messageIndex] = ChatMessage(
+      //     text:
+      //         '🖼️ Image Analysis:\n\nI can see this is an image! In the production version, I would analyze this image and provide information about Malaysian landmarks, food, or cultural items shown.\n\nWould you like to know more about what\'s in this image?',
+      //     isUser: false,
+      //     timestamp: streamingMessage.timestamp,
+      //   );
+      // });
 
       /* PRODUCTION CODE - Uncomment when backend is ready:
       
