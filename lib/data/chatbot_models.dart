@@ -2,8 +2,10 @@
 // DATA MODELS (moved to lib/data)
 // ============================================================================
 
-enum MessageType { text, image, imageRecognition, routeCard }
+import 'dart:io';
 
+enum MessageType { text, image, imageRecognition, routeCard, imageWithText }
+enum MessageStatus {sending,sent,failed, received,}
 class ChatMessage {
   final String text;
   final bool isUser;
@@ -12,6 +14,14 @@ class ChatMessage {
   final bool hasRouteCard;
   final String? imageUrl;
   final ImageRecognitionData? recognitionData;
+  // final MessageStatus status;
+  final File? imageFile; // Temporary file before upload
+  final String? imageBase64; // Base64 for API
+  // Metadata
+  final Map<String, dynamic>? metadata; // Recognition data, etc.
+  final String? error; // Error message if failed
+
+ 
 
   ChatMessage({
     required this.text,
@@ -21,7 +31,71 @@ class ChatMessage {
     this.hasRouteCard = false,
     this.imageUrl,
     this.recognitionData,
+    // this.status = MessageStatus.sent,
+    this.imageFile,
+    this.imageBase64,
+    this.metadata,
+    this.error,
   });
+// Create a copy with updated fields
+  ChatMessage copyWith({
+    String? text,
+    // MessageStatus? status,
+    String? imageUrl,
+    String? error,
+    Map<String, dynamic>? metadata,
+  }) {
+    return ChatMessage(
+
+      text: text ?? this.text,
+      isUser: this.isUser,
+      timestamp: this.timestamp,
+      type: this.type,
+      // status: status ?? this.status,
+      hasRouteCard: this.hasRouteCard,
+      imageUrl: imageUrl ?? this.imageUrl,
+      imageFile: this.imageFile,
+      imageBase64: this.imageBase64,
+      metadata: metadata ?? this.metadata,
+      error: error ?? this.error,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      // 'id': id,
+      'text': text,
+      'isUser': isUser,
+      'timestamp': timestamp.toIso8601String(),
+      'type': type.toString(),
+      // 'status': status.toString(),
+      'hasRouteCard': hasRouteCard,
+      'imageUrl': imageUrl,
+      'metadata': metadata,
+      'error': error,
+    };
+  }
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    return ChatMessage(
+      // id: json['id'],
+      text: json['text'],
+      isUser: json['isUser'],
+      timestamp: DateTime.parse(json['timestamp']),
+      type: MessageType.values.firstWhere(
+        (e) => e.toString() == json['type'],
+        orElse: () => MessageType.text,
+      ),
+      // status: MessageStatus.values.firstWhere(
+      //   (e) => e.toString() == json['status'],
+      //   orElse: () => MessageStatus.sent,
+      // ),
+      hasRouteCard: json['hasRouteCard'] ?? false,
+      imageUrl: json['imageUrl'],
+      metadata: json['metadata'],
+      error: json['error'],
+    );
+  }
 }
 
 class ChatSession {
@@ -33,6 +107,12 @@ class ChatSession {
   AISettings aiSettings;
   bool isPinned;
 
+  // Session metadata
+  final Map<String, dynamic>? metadata;
+  
+  // Draft state (unsent message)
+  DraftMessage? draft;
+
   ChatSession({
     required this.id,
     required this.title,
@@ -41,8 +121,11 @@ class ChatSession {
     required this.messages,
     required this.aiSettings,
     this.isPinned = false,
+    this.metadata,
+    this.draft,
   });
 
+  
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -63,6 +146,8 @@ class ChatSession {
           .toList(),
       'aiSettings': aiSettings.toJson(),
       'isPinned': isPinned,
+      'metadata': metadata,
+      'draft': draft?.toJson(),
     };
   }
 
@@ -88,10 +173,62 @@ class ChatSession {
           .toList(),
       aiSettings: AISettings.fromJson(json['aiSettings']),
       isPinned: json['isPinned'] ?? false,
+      metadata: json['metadata'],
+      draft: json['draft'] != null 
+          ? DraftMessage.fromJson(json['draft']) 
+          : null,
     );
   }
+
+  // Get preview text for chat list
+  String getPreviewText() {
+    if (messages.isEmpty) return 'No messages yet';
+    final lastMessage = messages.last;
+    if (lastMessage.type == MessageType.image) {
+      return '📷 Image';
+    } else if (lastMessage.type == MessageType.imageWithText) {
+      return '📷 ${lastMessage.text.substring(0, lastMessage.text.length > 30 ? 30 : lastMessage.text.length)}...';
+    }
+    return lastMessage.text.substring(0, lastMessage.text.length > 50 ? 50 : lastMessage.text.length);
+  }
+
 }
 
+  // Draft message (unsent message with image preview)
+  class DraftMessage {
+    String text;
+    File? imageFile;
+    String? imageBase64;
+
+    DraftMessage({
+      this.text = '',
+      this.imageFile,
+      this.imageBase64,
+    });
+
+    bool get hasContent => text.isNotEmpty || imageFile != null;
+    bool get hasImage => imageFile != null;
+
+    void clear() {
+      text = '';
+      imageFile = null;
+      imageBase64 = null;
+    }
+
+    Map<String, dynamic> toJson() {
+      return {
+        'text': text,
+        'imagePath': imageFile?.path,
+      };
+    }
+
+    factory DraftMessage.fromJson(Map<String, dynamic> json) {
+      return DraftMessage(
+        text: json['text'] ?? '',
+        imageFile: json['imagePath'] != null ? File(json['imagePath']) : null,
+      );
+    }
+  }
 class AISettings {
   int humorLevel;
   String answerLength;

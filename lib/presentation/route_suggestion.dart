@@ -20,6 +20,9 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ImagePicker _picker = ImagePicker();
+  // For image preview before sending
+  File? _pendingImage;
+  String? _pendingImagePath;
 
   List<ChatSession> _allSessions = [];
   ChatSession? _currentSession;
@@ -79,8 +82,43 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   void _navigateToPage(BuildContext context, Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (context) => page));
   }
+  void _sendImageWithMessage() {
+  if (_pendingImage == null || _currentSession == null) return;
+
+  final userMessage = _messageController.text.trim();
+  final imageFile = _pendingImage!;
+
+  setState(() {
+    // Add image with optional text to chat
+    _currentSession!.messages.add(
+      ChatMessage(
+        text: userMessage.isEmpty ? '[Image]' : userMessage,
+        isUser: true,
+        timestamp: DateTime.now(),
+        type: MessageType.image,
+        imageUrl: _pendingImagePath,
+      ),
+    );
+    _currentSession!.lastActiveAt = DateTime.now();
+
+    // Clear pending image and text
+    _pendingImage = null;
+    _pendingImagePath = null;
+    _messageController.clear();
+  });
+
+  _scrollToBottom();
+
+  // Send image to backend
+  _sendImageToBackend(imageFile);
+}
 
   void _sendMessage() {
+    // Check if we have a pending image
+    if (_pendingImage != null) {
+      _sendImageWithMessage();
+      return;
+    }
     if (_messageController.text.trim().isEmpty || _currentSession == null) {
       return;
     }
@@ -197,6 +235,124 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       );
     }
   }
+
+  // Rename chat session
+  void _renameSession(ChatSession session) { 
+  final controller = TextEditingController(text: session.title);
+  
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: const Color(0xFF1E1E1E),
+      title: const Text(
+        'Rename Chat',
+        style: TextStyle(color: Colors.white),
+      ),
+      content: TextField(
+        controller: controller,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: 'Enter new name',
+          hintStyle: const TextStyle(color: Color(0xFFB3B3B3)),
+          filled: true,
+          fillColor: const Color(0xFF121212),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFFA51212)),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Color(0xFFB3B3B3)),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            if (controller.text.trim().isNotEmpty) {
+              setState(() {
+                session.title = controller.text.trim();
+              });
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Chat renamed'),
+                  backgroundColor: Color(0xFFA51212),
+                ),
+              );
+            }
+          },
+          child: const Text(
+            'Rename',
+            style: TextStyle(color: Color(0xFFA51212)),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+  // Delete chat session
+  void _deleteSession(ChatSession session) { 
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: const Color(0xFF1E1E1E),
+      title: const Text(
+        'Delete Chat',
+        style: TextStyle(color: Colors.white),
+      ),
+      content: Text(
+        'Are you sure you want to delete "${session.title}"?',
+        style: const TextStyle(color: Color(0xFFB3B3B3)),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Color(0xFFB3B3B3)),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            setState(() {
+              _allSessions.remove(session);
+              if (_currentSession?.id == session.id) {
+                _currentSession = _allSessions.isNotEmpty ? _allSessions[0] : null;
+                if (_currentSession == null) {
+                  _createNewSession();
+                }
+              }
+            });
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Chat deleted'),
+                backgroundColor: Color(0xFFA51212),
+              ),
+            );
+          },
+          child: const Text(
+            'Delete',
+            style: TextStyle(color: Color(0xFFD32F2F)),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   // Add a method to send initial greeting
   void _sendInitialGreeting() async {
@@ -341,89 +497,61 @@ class RouteSuggestionState extends State<RouteSuggestion> {
 
   // Method to take photo using camera
   Future<void> _takePhoto() async {
-    try {
-      final XFile? photo = await _picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 85, // Compress image
-        maxWidth: 1024,
-        maxHeight: 1024,
-      );
+  try {
+    final XFile? photo = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    );
 
-      if (photo != null) {
-        final File imageFile = File(photo.path);
+    if (photo != null) {
+      setState(() {
+        _pendingImage = File(photo.path);
+        _pendingImagePath = photo.path;
+      });
 
-        // Add image to chat as user message
-        setState(() {
-          _currentSession!.messages.add(
-            ChatMessage(
-              text: '[Image captured]',
-              isUser: true,
-              timestamp: DateTime.now(),
-              type: MessageType.image,
-              imageUrl: photo.path, // Local file path
-            ),
-          );
-          _currentSession!.lastActiveAt = DateTime.now();
-        });
-
-        _scrollToBottom();
-
-        // TODO: Send image to backend for recognition
-        _sendImageToBackend(imageFile);
-      }
-    } catch (e) {
-      print('Error taking photo: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to take photo: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _scrollToBottom();
     }
+  } catch (e) {
+    print('Error taking photo: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to take photo: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   // Method to choose image from gallery
   Future<void> _chooseFromGallery() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-        maxWidth: 1024,
-        maxHeight: 1024,
-      );
+  try {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    );
 
-      if (image != null) {
-        final File imageFile = File(image.path);
+    if (image != null) {
+      setState(() {
+        _pendingImage = File(image.path);
+        _pendingImagePath = image.path;
+      });
 
-        // Add image to chat as user message
-        setState(() {
-          _currentSession!.messages.add(
-            ChatMessage(
-              text: '[Image selected]',
-              isUser: true,
-              timestamp: DateTime.now(),
-              type: MessageType.image,
-              imageUrl: image.path,
-            ),
-          );
-          _currentSession!.lastActiveAt = DateTime.now();
-        });
-
-        _scrollToBottom();
-
-        // TODO: Send image to backend for recognition
-        _sendImageToBackend(imageFile);
-      }
-    } catch (e) {
-      print('Error selecting image: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to select image: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _scrollToBottom();
     }
+  } catch (e) {
+    print('Error selecting image: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to select image: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   // Method to send image to backend
   Future<void> _sendImageToBackend(File imageFile) async {
@@ -621,6 +749,54 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                         _currentSession = session;
                       });
                       Navigator.pop(context);
+                    },
+                    onLongPress: () {
+                      // Show options menu on long press
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: const Color(0xFF1E1E1E),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                        ),
+                        builder: (context) => Container(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.edit, color: Colors.white),
+                                title: const Text(
+                                  'Rename',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _renameSession(session);
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.delete, color: Colors.red),
+                                title: const Text(
+                                  'Delete',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _deleteSession(session);
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.close, color: Colors.white),
+                                title: const Text(
+                                  'Cancel',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                onTap: () => Navigator.pop(context),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
                     },
                     child: Container(
                       margin: const EdgeInsets.symmetric(
@@ -1073,71 +1249,122 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   }
 
   Widget _buildInputArea() {
-    return Container(
-      color: const Color(0xFF121212),
-      padding: const EdgeInsets.all(15),
-      child: Row(
-        children: [
-          InkWell(
-            onTap: _handleImageUpload,
-            child: Container(
-              width: 35,
-              height: 35,
-              margin: const EdgeInsets.only(right: 8),
-              child: const Icon(Icons.camera_alt, color: Colors.white),
+  return Container(
+    color: const Color(0xFF121212),
+    padding: const EdgeInsets.all(15),
+    child: Column(
+      children: [
+        // Image preview area
+        if (_pendingImage != null) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF2A2A2A)),
             ),
-          ),
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              decoration: InputDecoration(
-                hintText: "Ask me anything about Malaysia...",
-                hintStyle: const TextStyle(
-                  color: Color(0xFFB3B3B3),
-                  fontSize: 16,
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    _pendingImage!,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-                filled: true,
-                fillColor: const Color(0xFF1E1E1E),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Image ready to send',
+                    style: TextStyle(
+                      color: Color(0xFFB3B3B3),
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                  onPressed: () {
+                    setState(() {
+                      _pendingImage = null;
+                      _pendingImagePath = null;
+                    });
+                  },
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFA51212)),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 15,
-                  vertical: 12,
-                ),
-              ),
-              onSubmitted: (_) => _sendMessage(),
-            ),
-          ),
-          const SizedBox(width: 9),
-          InkWell(
-            onTap: _sendMessage,
-            child: Container(
-              width: 39,
-              height: 39,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
-                ),
-              ),
-              child: const Icon(Icons.send, color: Colors.white),
+              ],
             ),
           ),
         ],
-      ),
-    );
-  }
+        // Input row
+        Row(
+          children: [
+            InkWell(
+              onTap: _handleImageUpload,
+              child: Container(
+                width: 35,
+                height: 35,
+                margin: const EdgeInsets.only(right: 8),
+                child: const Icon(Icons.camera_alt, color: Colors.white),
+              ),
+            ),
+            Expanded(
+              child: TextField(
+                controller: _messageController,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                decoration: InputDecoration(
+                  hintText: _pendingImage != null
+                      ? "Add a caption (optional)..."
+                      : "Ask me anything about Malaysia...",
+                  hintStyle: const TextStyle(
+                    color: Color(0xFFB3B3B3),
+                    fontSize: 16,
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFF1E1E1E),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFA51212)),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 12,
+                  ),
+                ),
+                onSubmitted: (_) => _sendMessage(),
+              ),
+            ),
+            const SizedBox(width: 9),
+            InkWell(
+              onTap: _sendMessage,
+              child: Container(
+                width: 39,
+                height: 39,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                  ),
+                ),
+                child: const Icon(Icons.send, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildBottomNavigation() {
     return Container(
