@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ChatService {
   final http.Client _client = http.Client();
@@ -17,7 +18,8 @@ class ChatService {
     required Function(String error) onError,
   }) async {
     try {
-      final request = http.Request('POST', Uri.parse('http://10.0.2.2:8000/api/chat'));
+      final baseUrl = dotenv.env['BASE_URL'] ?? '';
+      final request = http.Request('POST', Uri.parse('$baseUrl/api/chat'));
       request.headers['Content-Type'] = 'application/json';
       request.headers['Accept'] = 'text/event-stream';
 
@@ -49,9 +51,15 @@ class ChatService {
           } else if (trimmed.startsWith('data:')) {
             final data = jsonDecode(trimmed.substring(5).trim());
             switch (currentEvent) {
-              case 'message': onChunk(data['chunk'] ?? ''); break;
-              case 'done': onDone(ChatResponse.fromJson(data)); break;
-              case 'error': onError(data['error'] ?? 'Unknown error'); break;
+              case 'message':
+                onChunk(data['chunk'] ?? '');
+                break;
+              case 'done':
+                onDone(ChatResponse.fromJson(data));
+                break;
+              case 'error':
+                onError(data['error'] ?? 'Unknown error');
+                break;
             }
           }
         }
@@ -69,7 +77,11 @@ class ChatResponse {
   final String response;
   final List<String> agentsUsed;
 
-  ChatResponse({required this.sessionTitle, required this.response, required this.agentsUsed});
+  ChatResponse({
+    required this.sessionTitle,
+    required this.response,
+    required this.agentsUsed,
+  });
 
   factory ChatResponse.fromJson(Map<String, dynamic> json) => ChatResponse(
     sessionTitle: json['session_title'] ?? '',

@@ -57,14 +57,14 @@ flutter run
 
 ### Backend Configuration
 
-Edit `lib/services/chat_api_service.dart`:
+Create a `.env` file in the root directory (assets are already configured):
 
-```dart
-// For Android Emulator:
-static const String baseUrl = 'http://10.0.2.2:8000';
+```env
+# For Android Emulator:
+BASE_URL=http://10.0.2.2:8000
 
-// For Physical Device (replace with your IP):
-// static const String baseUrl = 'http://192.168.1.100:8000';
+# For Physical Device (replace with your IP):
+# BASE_URL=http://192.168.1.100:8000
 ```
 
 ## 🔌 API Contract

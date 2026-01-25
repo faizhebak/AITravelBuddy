@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ChatApiService {
-  // TODO: Replace with your actual backend URL
-  // For localhost testing, use 'http://localhost:8000'
-  // static const String baseUrl = 'http://localhost:8000'; // For emulator: http://10.0.2.2:8000
+  // Ensure you have a .env file with BASE_URL defined
+  // Example: BASE_URL=http://your-backend-url
 
   // // For Android Emulator:
-  static const String baseUrl = 'http://10.0.2.2:8000';
+  static String get baseUrl => dotenv.env['BASE_URL'] ?? '';
 
   // // For iOS Simulator (if running on Mac):
   // static const String baseUrl = 'http://localhost:8000';
