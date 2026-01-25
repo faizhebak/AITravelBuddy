@@ -8,7 +8,7 @@
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/yourrepo/aitravelbuddy.git
+   git clone https://github.com/faizhebak/AITravelBuddy/aitravelbuddy.git
    cd aitravelbuddy
    ```
 
