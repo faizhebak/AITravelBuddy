@@ -15,7 +15,7 @@ Detailed documentation is available in the `docs/` directory:
 
 1.  **Clone & Install**:
     ```bash
-    git clone https://github.com/yourrepo/aitravelbuddy.git
+    git clone https://github.com/faizhebak/AITravelBuddy.git
     cd aitravelbuddy
     flutter pub get
     ```

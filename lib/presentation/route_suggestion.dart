@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:async';
+import 'dart:convert';
 import '../data/chatbot_models.dart';
 import 'ai_settings_screen.dart';
 import '../services/settings_service.dart';
@@ -58,20 +59,19 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       final userId = await _getUserId();
       final apiSessions = await SessionApiService.getSessions(userId);
 
-      final sessions =
-          apiSessions.map((api) {
-            // Store mapping for API calls
-            _sessionApiMap[api.uuid] = api;
+      final sessions = apiSessions.map((api) {
+        // Store mapping for API calls
+        _sessionApiMap[api.uuid] = api;
 
-            return ChatSession(
-              id: api.uuid,
-              title: api.title ?? 'Untitled Chat',
-              createdAt: api.createdAt,
-              lastActiveAt: api.updatedAt,
-              messages: [],
-              aiSettings: _globalSettings,
-            );
-          }).toList();
+        return ChatSession(
+          id: api.uuid,
+          title: api.title ?? 'Untitled Chat',
+          createdAt: api.createdAt,
+          lastActiveAt: api.updatedAt,
+          messages: [],
+          aiSettings: _globalSettings,
+        );
+      }).toList();
 
       setState(() {
         _allSessions = sessions;
@@ -160,8 +160,11 @@ class RouteSuggestionState extends State<RouteSuggestion> {
 
     _scrollToBottom();
 
-    // Send image to backend
-    _sendImageToBackend(imageFile);
+    // Send image to backend with user's message
+    _sendImageToBackend(
+      imageFile,
+      userMessage.isEmpty ? 'Analyze this image.' : userMessage,
+    );
   }
 
   void _sendMessage() {
@@ -316,65 +319,61 @@ class RouteSuggestionState extends State<RouteSuggestion> {
 
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E1E),
-            title: const Text(
-              'Rename Chat',
-              style: TextStyle(color: Colors.white),
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Rename Chat', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Enter new name',
+            hintStyle: const TextStyle(color: Color(0xFFB3B3B3)),
+            filled: true,
+            fillColor: const Color(0xFF121212),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
             ),
-            content: TextField(
-              controller: controller,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Enter new name',
-                hintStyle: const TextStyle(color: Color(0xFFB3B3B3)),
-                filled: true,
-                fillColor: const Color(0xFF121212),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFA51212)),
-                ),
-              ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Color(0xFFB3B3B3)),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  if (controller.text.trim().isNotEmpty) {
-                    setState(() {
-                      session.title = controller.text.trim();
-                    });
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Chat renamed'),
-                        backgroundColor: Color(0xFFA51212),
-                      ),
-                    );
-                  }
-                },
-                child: const Text(
-                  'Rename',
-                  style: TextStyle(color: Color(0xFFA51212)),
-                ),
-              ),
-            ],
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFA51212)),
+            ),
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFFB3B3B3)),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                setState(() {
+                  session.title = controller.text.trim();
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Chat renamed'),
+                    backgroundColor: Color(0xFFA51212),
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              'Rename',
+              style: TextStyle(color: Color(0xFFA51212)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -382,71 +381,68 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   void _deleteSession(ChatSession session) {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E1E),
-            title: const Text(
-              'Delete Chat',
-              style: TextStyle(color: Colors.white),
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Delete Chat', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Are you sure you want to delete "${session.title}"?',
+          style: const TextStyle(color: Color(0xFFB3B3B3)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFFB3B3B3)),
             ),
-            content: Text(
-              'Are you sure you want to delete "${session.title}"?',
-              style: const TextStyle(color: Color(0xFFB3B3B3)),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Color(0xFFB3B3B3)),
-                ),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-
-                  // Delete from backend
-                  try {
-                    final apiSession = _sessionApiMap[session.id];
-                    if (apiSession != null) {
-                      await SessionApiService.deleteSession(apiSession.id);
-                      _sessionApiMap.remove(session.id);
-                    }
-
-                    setState(() {
-                      _allSessions.remove(session);
-                      if (_currentSession?.id == session.id) {
-                        _currentSession =
-                            _allSessions.isNotEmpty ? _allSessions[0] : null;
-                        if (_currentSession == null) {
-                          _createNewSession();
-                        }
-                      }
-                    });
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Chat deleted'),
-                        backgroundColor: Color(0xFFA51212),
-                      ),
-                    );
-                  } catch (e) {
-                    print('Error deleting session: $e');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to delete: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: Color(0xFFD32F2F)),
-                ),
-              ),
-            ],
           ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              // Delete from backend
+              try {
+                final apiSession = _sessionApiMap[session.id];
+                if (apiSession != null) {
+                  await SessionApiService.deleteSession(apiSession.id);
+                  _sessionApiMap.remove(session.id);
+                }
+
+                setState(() {
+                  _allSessions.remove(session);
+                  if (_currentSession?.id == session.id) {
+                    _currentSession = _allSessions.isNotEmpty
+                        ? _allSessions[0]
+                        : null;
+                    if (_currentSession == null) {
+                      _createNewSession();
+                    }
+                  }
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Chat deleted'),
+                    backgroundColor: Color(0xFFA51212),
+                  ),
+                );
+              } catch (e) {
+                print('Error deleting session: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to delete: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Color(0xFFD32F2F)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -468,17 +464,16 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       );
 
       // Convert API messages to ChatMessage objects
-      final messages =
-          response.messages
-              .map(
-                (apiMsg) => ChatMessage(
-                  text: apiMsg.content,
-                  isUser: apiMsg.isUser,
-                  timestamp: apiMsg.createdAt,
-                  imageUrl: apiMsg.imageBase64,
-                ),
-              )
-              .toList();
+      final messages = response.messages
+          .map(
+            (apiMsg) => ChatMessage(
+              text: apiMsg.content,
+              isUser: apiMsg.isUser,
+              timestamp: apiMsg.createdAt,
+              imageUrl: apiMsg.imageBase64,
+            ),
+          )
+          .toList();
 
       setState(() {
         session.messages = messages;
@@ -590,57 +585,56 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Upload Image',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                ListTile(
-                  leading: const Icon(Icons.camera_alt, color: Colors.white),
-                  title: const Text(
-                    'Take Photo',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await _takePhoto();
-                  },
-                ),
-
-                ListTile(
-                  leading: const Icon(Icons.photo_library, color: Colors.white),
-                  title: const Text(
-                    'Choose from Gallery',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await _chooseFromGallery();
-                  },
-                ),
-
-                ListTile(
-                  leading: const Icon(Icons.close, color: Colors.white),
-                  title: const Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () => Navigator.pop(context),
-                ),
-              ],
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Upload Image',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
+            const SizedBox(height: 20),
+
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.white),
+              title: const Text(
+                'Take Photo',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _takePhoto();
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.white),
+              title: const Text(
+                'Choose from Gallery',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _chooseFromGallery();
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.close, color: Colors.white),
+              title: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -703,7 +697,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   }
 
   // Method to send image to backend
-  Future<void> _sendImageToBackend(File imageFile) async {
+  Future<void> _sendImageToBackend(File imageFile, String userMessage) async {
     if (!mounted) return;
 
     setState(() {
@@ -711,6 +705,10 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     });
 
     try {
+      // Convert image to base64
+      final bytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
       // Create streaming message for AI response
       final streamingMessage = ChatMessage(
         text: '',
@@ -725,12 +723,12 @@ class RouteSuggestionState extends State<RouteSuggestion> {
 
       final messageIndex = _currentSession!.messages.length - 1;
 
-      // TODO: Replace with actual image recognition API call
-      // Stream the initial greeting
+      // Send image via /api/chat with image_base64 field and user's message
       await for (final chunk in ChatApiService.sendMessage(
         sessionId: _currentSession!.id,
         userId: await _getUserId(),
-        userMessage: 'Hello!', // Trigger backend greeting
+        userMessage: userMessage,
+        imageBase64: base64Image,
         userPreference: _currentSession!.aiSettings.toApiPreference(),
       )) {
         if (!mounted) break;
@@ -745,42 +743,6 @@ class RouteSuggestionState extends State<RouteSuggestion> {
 
         _scrollToBottom();
       }
-      // For now, simulate a response
-      await Future.delayed(const Duration(seconds: 2));
-
-      // setState(() {
-      //   _currentSession!.messages[messageIndex] = ChatMessage(
-      //     text:
-      //         '🖼️ Image Analysis:\n\nI can see this is an image! In the production version, I would analyze this image and provide information about Malaysian landmarks, food, or cultural items shown.\n\nWould you like to know more about what\'s in this image?',
-      //     isUser: false,
-      //     timestamp: streamingMessage.timestamp,
-      //   );
-      // });
-
-      /* PRODUCTION CODE - Uncomment when backend is ready:
-      
-      // Convert image to base64 or multipart
-      final bytes = await imageFile.readAsBytes();
-      final base64Image = base64Encode(bytes);
-      
-      // Stream the image recognition response
-      await for (final chunk in ChatApiService.sendImageMessage(
-        sessionId: _currentSession!.id,
-        imageBase64: base64Image,
-      )) {
-        if (!mounted) break;
-
-        setState(() {
-          _currentSession!.messages[messageIndex] = ChatMessage(
-            text: _currentSession!.messages[messageIndex].text + chunk,
-            isUser: false,
-            timestamp: streamingMessage.timestamp,
-          );
-        });
-
-        _scrollToBottom();
-      }
-      */
 
       _scrollToBottom();
     } catch (e) {
@@ -819,28 +781,27 @@ class RouteSuggestionState extends State<RouteSuggestion> {
           children: [
             _buildHeader(),
             Expanded(
-              child:
-                  _currentSession == null
-                      ? const Center(child: CircularProgressIndicator())
-                      : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 15,
-                          vertical: 16,
-                        ),
-                        itemCount:
-                            _currentSession!.messages.length +
-                            (_isTyping ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (_isTyping &&
-                              index == _currentSession!.messages.length) {
-                            return _buildTypingIndicator();
-                          }
-                          return _buildMessageBubble(
-                            _currentSession!.messages[index],
-                          );
-                        },
+              child: _currentSession == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 16,
                       ),
+                      itemCount:
+                          _currentSession!.messages.length +
+                          (_isTyping ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (_isTyping &&
+                            index == _currentSession!.messages.length) {
+                          return _buildTypingIndicator();
+                        }
+                        return _buildMessageBubble(
+                          _currentSession!.messages[index],
+                        );
+                      },
+                    ),
             ),
             _buildInputArea(),
             _buildBottomNavigation(),
@@ -916,54 +877,53 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                             top: Radius.circular(20),
                           ),
                         ),
-                        builder:
-                            (context) => Container(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ListTile(
-                                    leading: const Icon(
-                                      Icons.edit,
-                                      color: Colors.white,
-                                    ),
-                                    title: const Text(
-                                      'Rename',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    onTap: () {
-                                      Navigator.pop(context);
-                                      _renameSession(session);
-                                    },
-                                  ),
-                                  ListTile(
-                                    leading: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                    ),
-                                    title: const Text(
-                                      'Delete',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                    onTap: () {
-                                      Navigator.pop(context);
-                                      _deleteSession(session);
-                                    },
-                                  ),
-                                  ListTile(
-                                    leading: const Icon(
-                                      Icons.close,
-                                      color: Colors.white,
-                                    ),
-                                    title: const Text(
-                                      'Cancel',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    onTap: () => Navigator.pop(context),
-                                  ),
-                                ],
+                        builder: (context) => Container(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                ),
+                                title: const Text(
+                                  'Rename',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _renameSession(session);
+                                },
                               ),
-                            ),
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                title: const Text(
+                                  'Delete',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _deleteSession(session);
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                ),
+                                title: const Text(
+                                  'Cancel',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                onTap: () => Navigator.pop(context),
+                              ),
+                            ],
+                          ),
+                        ),
                       );
                     },
                     child: Container(
@@ -973,15 +933,11 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                       ),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        gradient:
-                            isActive
-                                ? const LinearGradient(
-                                  colors: [
-                                    Color(0xFFA51212),
-                                    Color(0xFFD32F2F),
-                                  ],
-                                )
-                                : null,
+                        gradient: isActive
+                            ? const LinearGradient(
+                                colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                              )
+                            : null,
                         color: isActive ? null : const Color(0xFF1E1E1E),
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -1008,20 +964,19 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => AISettingsScreen(
-              settings: _globalSettings,
-              onSave: (newSettings) async {
-                final userId = await _getUserId();
-                await SettingsService.saveSettings(userId, newSettings);
-                setState(() {
-                  _globalSettings = newSettings;
-                  if (_currentSession != null) {
-                    _currentSession!.aiSettings = newSettings;
-                  }
-                });
-              },
-            ),
+        builder: (context) => AISettingsScreen(
+          settings: _globalSettings,
+          onSave: (newSettings) async {
+            final userId = await _getUserId();
+            await SettingsService.saveSettings(userId, newSettings);
+            setState(() {
+              _globalSettings = newSettings;
+              if (_currentSession != null) {
+                _currentSession!.aiSettings = newSettings;
+              }
+            });
+          },
+        ),
       ),
     );
   }
@@ -1136,8 +1091,9 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment:
-            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: message.isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!message.isUser) ...[
             Container(
@@ -1154,10 +1110,9 @@ class RouteSuggestionState extends State<RouteSuggestion> {
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  message.isUser
-                      ? CrossAxisAlignment.end
-                      : CrossAxisAlignment.start,
+              crossAxisAlignment: message.isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 // Show image if message has one
                 if (message.type == MessageType.image &&
@@ -1185,18 +1140,16 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                   Container(
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color:
-                            message.isUser
-                                ? const Color(0xFFA51212)
-                                : const Color(0xFF2A2A2A),
+                        color: message.isUser
+                            ? const Color(0xFFA51212)
+                            : const Color(0xFF2A2A2A),
                       ),
                       borderRadius: BorderRadius.circular(16),
-                      gradient:
-                          message.isUser
-                              ? const LinearGradient(
-                                colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
-                              )
-                              : null,
+                      gradient: message.isUser
+                          ? const LinearGradient(
+                              colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                            )
+                          : null,
                       color: message.isUser ? null : const Color(0xFF1E1E1E),
                     ),
                     padding: const EdgeInsets.all(13),
@@ -1218,10 +1171,9 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                         Text(
                           _formatTime(message.timestamp),
                           style: TextStyle(
-                            color:
-                                message.isUser
-                                    ? const Color(0xFFFFFEFE)
-                                    : const Color(0xFFB3B3B3),
+                            color: message.isUser
+                                ? const Color(0xFFFFFEFE)
+                                : const Color(0xFFB3B3B3),
                             fontSize: 12,
                           ),
                         ),
@@ -1493,10 +1445,9 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                   controller: _messageController,
                   style: const TextStyle(color: Colors.white, fontSize: 16),
                   decoration: InputDecoration(
-                    hintText:
-                        _pendingImage != null
-                            ? "Add a caption (optional)..."
-                            : "Ask me anything about Malaysia...",
+                    hintText: _pendingImage != null
+                        ? "Add a caption (optional)..."
+                        : "Ask me anything about Malaysia...",
                     hintStyle: const TextStyle(
                       color: Color(0xFFB3B3B3),
                       fontSize: 16,
@@ -1584,22 +1535,21 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     return InkWell(
       onTap: onTap,
       child: Container(
-        decoration:
-            isActive
-                ? BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0x4DA51212),
-                      blurRadius: 6,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+        decoration: isActive
+            ? BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0x4DA51212),
+                    blurRadius: 6,
+                    offset: const Offset(0, 4),
                   ),
-                )
-                : null,
+                ],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                ),
+              )
+            : null,
         padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 11),
         child: Column(
           mainAxisSize: MainAxisSize.min,
