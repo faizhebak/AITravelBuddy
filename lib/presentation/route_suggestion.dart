@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
@@ -1504,19 +1505,19 @@ class RouteSuggestionState extends State<RouteSuggestion> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildNavItem(
-            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/rcl0gtkr_expires_30_days.png",
+            FontAwesomeIcons.house,
             "Home",
             false,
             () => Navigator.pop(context),
           ),
           _buildNavItem(
-            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/k9kjfm62_expires_30_days.png",
+            FontAwesomeIcons.cameraRetro,
             "AR Scan",
             false,
             () => _navigateToPage(context, const ARScannerPage()),
           ),
           _buildNavItem(
-            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/nyaet7u9_expires_30_days.png",
+            FontAwesomeIcons.commentDots,
             "Chat AI",
             true,
             () {},
@@ -1527,47 +1528,51 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   }
 
   Widget _buildNavItem(
-    String icon,
-    String label,
-    bool isActive,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        decoration: isActive
-            ? BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0x4DA51212),
-                    blurRadius: 6,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+  IconData icon,  // Changed from String to IconData
+  String label,
+  bool isActive,
+  VoidCallback onTap,
+) {
+  return InkWell(
+    onTap: onTap,
+    child: Container(
+      decoration: isActive
+          ? BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0x4DA51212),
+                  blurRadius: 6,
+                  offset: const Offset(0, 4),
                 ),
-              )
-            : null,
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 11),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.network(icon, width: 23, height: 23),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? Colors.white : const Color(0xFFB3B3B3),
-                fontSize: 12,
+              ],
+              gradient: const LinearGradient(
+                colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
               ),
+            )
+          : null,
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 11),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FaIcon(  // Changed from Image.network to FaIcon
+            icon,
+            size: 23,
+            color: isActive ? Colors.white : const Color(0xFFB3B3B3),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isActive ? Colors.white : const Color(0xFFB3B3B3),
+              fontSize: 12,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   String _formatTime(DateTime timestamp) {
     return "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
