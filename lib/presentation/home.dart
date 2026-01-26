@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'route_suggestion.dart';
 import 'all_destinations_page.dart';
 import 'destination_details_page.dart';
+import 'ar_scanner_page.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -23,24 +25,19 @@ class HomeState extends State<Home> {
           constraints: const BoxConstraints.expand(),
           color: const Color(0xFF000000),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Container(
-                  color: const Color(0xFF000000),
-                  width: double.infinity,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(),
-                        _buildMainContent(context),
-                        _buildBottomNavigation(context),
-                      ],
-                    ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(),
+                      _buildMainContent(context),
+                    ],
                   ),
                 ),
               ),
+              _buildBottomNavigation(),
             ],
           ),
         ),
@@ -102,7 +99,6 @@ class HomeState extends State<Home> {
     return Container(
       color: const Color(0xFF000000),
       padding: const EdgeInsets.symmetric(vertical: 23),
-      margin: const EdgeInsets.only(bottom: 80),
       width: double.infinity,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,22 +145,19 @@ class HomeState extends State<Home> {
         children: [
           Expanded(
             child: _buildActionCard(
-              icon:
-                  "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/ey1o4os6_expires_30_days.png",
+              icon: FontAwesomeIcons.camera,
               title: "Launch AR",
               subtitle: "Scan landmarks",
               colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
               onTap: () {
-                print('Navigate to AR Scanner');
+                _navigateToPage(context, const ARScannerPage());
               },
             ),
           ),
           const SizedBox(width: 16),
-
           Expanded(
             child: _buildActionCard(
-              icon:
-                  "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/bh6ra67r_expires_30_days.png",
+              icon: FontAwesomeIcons.robot,
               title: "AI Chatbot",
               subtitle: "Ask anything",
               colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
@@ -177,9 +170,10 @@ class HomeState extends State<Home> {
       ),
     );
   }
+  
 
   Widget _buildActionCard({
-    required String icon,
+    required IconData icon,
     required String title,
     required String subtitle,
     required List<Color> colors,
@@ -201,7 +195,7 @@ class HomeState extends State<Home> {
         padding: const EdgeInsets.symmetric(vertical: 25),
         child: Column(
           children: [
-            Image.network(icon, width: 55, height: 55, fit: BoxFit.contain),
+            FaIcon(icon, size: 55, color: Colors.white),
             const SizedBox(height: 12),
             Text(
               title,
@@ -245,8 +239,7 @@ class HomeState extends State<Home> {
             children: [
               Expanded(
                 child: _buildQuickAccessCard(
-                  icon:
-                      "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/xsenwe3m_expires_30_days.png",
+                  icon: FontAwesomeIcons.hotel,
                   label: "Hotel Booking",
                   colors: [Color(0xFFD32F2F), Color(0xFF8B0000)],
                   onTap: () {
@@ -259,8 +252,7 @@ class HomeState extends State<Home> {
 
               Expanded(
                 child: _buildQuickAccessCard(
-                  icon:
-                      "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/k9ap9bzy_expires_30_days.png",
+                  icon: FontAwesomeIcons.route,
                   label: "Route Suggestion",
                   colors: [Color(0xFFD32F2F), Color(0xFF8B0000)],
                   onTap: () {
@@ -272,8 +264,7 @@ class HomeState extends State<Home> {
 
               Expanded(
                 child: _buildQuickAccessCard(
-                  icon:
-                      "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/uadgyttp_expires_30_days.png",
+                  icon: FontAwesomeIcons.utensils,
                   label: "Food Explorer",
                   colors: [Color(0xFFD32F2F), Color(0xFF8B0000)],
                   onTap: () {
@@ -290,7 +281,7 @@ class HomeState extends State<Home> {
   }
 
   Widget _buildQuickAccessCard({
-    required String icon,
+    required IconData icon,
     required String label,
     required List<Color> colors,
     required VoidCallback onTap,
@@ -311,7 +302,7 @@ class HomeState extends State<Home> {
         padding: const EdgeInsets.symmetric(vertical: 17),
         child: Column(
           children: [
-            Image.network(icon, width: 23, height: 23, fit: BoxFit.contain),
+            FaIcon(icon, size: 23, color: Colors.white),
             const SizedBox(height: 8),
             Text(
               label,
@@ -342,11 +333,13 @@ class HomeState extends State<Home> {
         children: [
           Row(
             children: [
-              Image.network(
-                "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/dj9004yd_expires_30_days.png",
+              Container(
                 width: 7,
                 height: 7,
-                fit: BoxFit.contain,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFA51212),
+                  shape: BoxShape.circle,
+                ),
               ),
               const SizedBox(width: 12),
               const Text(
@@ -375,21 +368,17 @@ class HomeState extends State<Home> {
   Widget _buildFeaturedDestinations(BuildContext context) {
     final destinations = [
       {
-        'image':
-            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/rl48p2ix_expires_30_days.png",
+        'image': "assets/images/petronas_towers.png",
         'title': "Petronas Twin Towers",
+        'maps': "https://maps.app.goo.gl/vC1x3UMcyq8xhdCr7",
         'location': "Kuala Lumpur",
-        'locationIcon':
-            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/l6hfg72q_expires_30_days.png",
         'description': "The iconic twin skyscrapers in Kuala Lumpur, Malaysia.",
       },
       {
-        'image':
-            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/bvg8eil6_expires_30_days.png",
+        'image': "assets/images/batu_caves.png",
         'title': "Batu Caves",
+        'maps': "https://maps.app.goo.gl/ttVUoK54PRAxa1aJ9",
         'location': "Selangor",
-        'locationIcon':
-            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/ch4tsc0k_expires_30_days.png",
         'description':
             "A limestone hill with caves and temples, famous for the Hindu festival Thaipusam.",
       },
@@ -441,9 +430,10 @@ class HomeState extends State<Home> {
                         context,
                         DestinationDetailsPage(
                           title: dest['title'] as String,
+                          maps: dest['maps'] as String,
                           image: dest['image'] as String,
                           location: dest['location'] as String,
-                          locationIcon: dest['locationIcon'] as String,
+                          locationIcon: '', // No longer needed
                           description: dest['description'] as String,
                         ),
                       );
@@ -452,15 +442,15 @@ class HomeState extends State<Home> {
                       image: dest['image'] as String,
                       title: dest['title'] as String,
                       location: dest['location'] as String,
-                      locationIcon: dest['locationIcon'] as String,
                       onTap: () {
                         _navigateToPage(
                           context,
                           DestinationDetailsPage(
                             title: dest['title'] as String,
+                            maps: dest['maps'] as String,
                             image: dest['image'] as String,
                             location: dest['location'] as String,
-                            locationIcon: dest['locationIcon'] as String,
+                            locationIcon: '', // No longer needed
                             description: dest['description'] as String,
                           ),
                         );
@@ -482,7 +472,6 @@ class HomeState extends State<Home> {
     required String image,
     required String title,
     required String location,
-    required String locationIcon,
     required VoidCallback onTap,
   }) {
     return Container(
@@ -498,11 +487,22 @@ class HomeState extends State<Home> {
               topLeft: Radius.circular(16),
               bottomLeft: Radius.circular(16),
             ),
-            child: Image.network(
+            child: Image.asset(
               image,
               width: 95,
               height: 110,
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 95,
+                  height: 110,
+                  color: const Color(0xFF2A2A2A),
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    color: Color(0xFF666666),
+                  ),
+                );
+              },
             ),
           ),
 
@@ -523,11 +523,10 @@ class HomeState extends State<Home> {
                   const SizedBox(height: 5),
                   Row(
                     children: [
-                      Image.network(
-                        locationIcon,
-                        width: 15,
-                        height: 15,
-                        fit: BoxFit.contain,
+                      const FaIcon(
+                        FontAwesomeIcons.locationDot,
+                        size: 15,
+                        color: Color(0xFFA51212),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -573,63 +572,46 @@ class HomeState extends State<Home> {
     );
   }
 
-  Widget _buildBottomNavigation(BuildContext context) {
+  Widget _buildBottomNavigation() {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF121212),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0x40000000),
-            blurRadius: 50,
-            offset: const Offset(0, -25),
-          ),
-        ],
       ),
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildNavItem(
-            icon:
-                "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/rcl0gtkr_expires_30_days.png",
-            label: "Home",
-            isActive: true,
-            onTap: () {},
+            FontAwesomeIcons.house,
+            "Home",
+            true,
+            () {},
           ),
-
           _buildNavItem(
-            icon:
-                "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/k9kjfm62_expires_30_days.png",
-            label: "AR Scan",
-            isActive: false,
-            onTap: () {
-              print('Navigate to AR Scan');
-            },
+            FontAwesomeIcons.cameraRetro,
+            "AR Scan",
+            false,
+            () => _navigateToPage(context, const ARScannerPage()),
           ),
-
           _buildNavItem(
-            icon:
-                "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/zsxbv0wr_expires_30_days.png",
-            label: "Chat AI",
-            isActive: false,
-            onTap: () {
-              _navigateToPage(context, const RouteSuggestion());
-            },
+            FontAwesomeIcons.commentDots,
+            "Chat AI",
+            false,
+            () => _navigateToPage(context, const RouteSuggestion()),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem({
-    required String icon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildNavItem(
+    IconData icon,
+    String label,
+    bool isActive,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: isActive
             ? BoxDecoration(
@@ -642,24 +624,24 @@ class HomeState extends State<Home> {
                   ),
                 ],
                 gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
                   colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
                 ),
               )
             : null,
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 11),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.network(icon, width: 23, height: 23, fit: BoxFit.contain),
+            FaIcon(
+              icon,
+              size: 23,
+              color: isActive ? Colors.white : const Color(0xFFB3B3B3),
+            ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isActive
-                    ? const Color(0xFFFFFFFF)
-                    : const Color(0xFFB3B3B3),
+                color: isActive ? Colors.white : const Color(0xFFB3B3B3),
                 fontSize: 12,
               ),
             ),

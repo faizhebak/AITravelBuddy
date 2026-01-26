@@ -27,6 +27,7 @@ class AllDestinationsPage extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => DestinationDetailsPage(
                       title: dest['title'] as String,
+                      maps: dest['maps'] as String,
                       image: dest['image'] as String,
                       location: dest['location'] as String,
                       locationIcon: dest['locationIcon'] as String,

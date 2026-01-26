@@ -60,8 +60,10 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           _buildHumorLevelSlider(),
           const SizedBox(height: 24),
           _buildAnswerLengthSelector(),
+          // const SizedBox(height: 24),
+          // _buildRegionalFocusSelector(),
           const SizedBox(height: 24),
-          _buildRegionalFocusSelector(),
+          _buildProfessionalismSelector(),
           const SizedBox(height: 32),
           _buildResetButton(),
           const SizedBox(height: 16),
@@ -119,7 +121,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           color: isSelected ? null : const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+            color: isSelected
+                ? const Color(0xFFA51212)
+                : const Color(0xFF2A2A2A),
             width: 2,
           ),
         ),
@@ -234,7 +238,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           color: const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+            color: isSelected
+                ? const Color(0xFFA51212)
+                : const Color(0xFF2A2A2A),
             width: 2,
           ),
         ),
@@ -246,12 +252,18 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+                  color: isSelected
+                      ? const Color(0xFFA51212)
+                      : const Color(0xFF2A2A2A),
                   width: 2,
                 ),
-                color: isSelected ? const Color(0xFFA51212) : Colors.transparent,
+                color: isSelected
+                    ? const Color(0xFFA51212)
+                    : Colors.transparent,
               ),
-              child: isSelected ? const Icon(Icons.circle, size: 12, color: Colors.white) : null,
+              child: isSelected
+                  ? const Icon(Icons.circle, size: 12, color: Colors.white)
+                  : null,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -261,9 +273,13 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                   Text(
                     title,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : const Color(0xFFB3B3B3),
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFFB3B3B3),
                       fontSize: 16,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   Text(
@@ -282,12 +298,12 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     );
   }
 
-  Widget _buildRegionalFocusSelector() {
+  Widget _buildProfessionalismSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '🌍 Regional Focus',
+          '💼 Professionalism',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -304,38 +320,29 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
-              value: _currentSettings.regionalFocus,
+              value: _currentSettings.professionalism,
               isExpanded: true,
               dropdownColor: const Color(0xFF1E1E1E),
               style: const TextStyle(color: Colors.white, fontSize: 16),
               items: const [
                 DropdownMenuItem(
-                  value: 'All Malaysia',
-                  child: Text('All Malaysia'),
+                  value: 'casual',
+                  child: Text('👕 Casual Traveler Guide'),
                 ),
                 DropdownMenuItem(
-                  value: 'Kuala Lumpur',
-                  child: Text('Kuala Lumpur'),
+                  value: 'friendly',
+                  child: Text('🎽 Friendly Tour Guide'),
                 ),
-                DropdownMenuItem(value: 'Johor', child: Text('Johor')),
-                DropdownMenuItem(value: 'Kedah', child: Text('Kedah')),
-                DropdownMenuItem(value: 'Kelantan', child: Text('Kelantan')),
-                DropdownMenuItem(value: 'Melaka', child: Text('Melaka')),
-                DropdownMenuItem(value: 'Negeri Sembilan', child: Text('Negeri Sembilan')),
-                DropdownMenuItem(value: 'Pahang', child: Text('Pahang')),
-                DropdownMenuItem(value: 'Perak', child: Text('Perak')),
-                DropdownMenuItem(value: 'Perlis', child: Text('Perlis')),
-                DropdownMenuItem(value: 'Penang', child: Text('Penang')),
-                DropdownMenuItem(value: 'Sabah', child: Text('Sabah')),
-                DropdownMenuItem(value: 'Sarawak', child: Text('Sarawak')),
-                DropdownMenuItem(value: 'Selangor', child: Text('Selangor')),
-                DropdownMenuItem(value: 'Terengganu', child: Text('Terengganu')),
+                DropdownMenuItem(
+                  value: 'professional',
+                  child: Text('💼 Professional Expert'),
+                ),
               ],
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
                     _currentSettings = _currentSettings.copyWith(
-                      regionalFocus: value,
+                      professionalism: value,
                     );
                   });
                 }
@@ -346,6 +353,71 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       ],
     );
   }
+
+  // Widget _buildRegionalFocusSelector() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Text(
+  //         '🌍 Regional Focus',
+  //         style: TextStyle(
+  //           color: Colors.white,
+  //           fontSize: 18,
+  //           fontWeight: FontWeight.bold,
+  //         ),
+  //       ),
+  //       const SizedBox(height: 16),
+  //       Container(
+  //         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+  //         decoration: BoxDecoration(
+  //           color: const Color(0xFF1E1E1E),
+  //           borderRadius: BorderRadius.circular(12),
+  //           border: Border.all(color: const Color(0xFF2A2A2A)),
+  //         ),
+  //         child: DropdownButtonHideUnderline(
+  //           child: DropdownButton<String>(
+  //             value: _currentSettings.regionalFocus,
+  //             isExpanded: true,
+  //             dropdownColor: const Color(0xFF1E1E1E),
+  //             style: const TextStyle(color: Colors.white, fontSize: 16),
+  //             items: const [
+  //               DropdownMenuItem(
+  //                 value: 'All Malaysia',
+  //                 child: Text('All Malaysia'),
+  //               ),
+  //               DropdownMenuItem(
+  //                 value: 'Kuala Lumpur',
+  //                 child: Text('Kuala Lumpur'),
+  //               ),
+  //               DropdownMenuItem(value: 'Johor', child: Text('Johor')),
+  //               DropdownMenuItem(value: 'Kedah', child: Text('Kedah')),
+  //               DropdownMenuItem(value: 'Kelantan', child: Text('Kelantan')),
+  //               DropdownMenuItem(value: 'Melaka', child: Text('Melaka')),
+  //               DropdownMenuItem(value: 'Negeri Sembilan', child: Text('Negeri Sembilan')),
+  //               DropdownMenuItem(value: 'Pahang', child: Text('Pahang')),
+  //               DropdownMenuItem(value: 'Perak', child: Text('Perak')),
+  //               DropdownMenuItem(value: 'Perlis', child: Text('Perlis')),
+  //               DropdownMenuItem(value: 'Penang', child: Text('Penang')),
+  //               DropdownMenuItem(value: 'Sabah', child: Text('Sabah')),
+  //               DropdownMenuItem(value: 'Sarawak', child: Text('Sarawak')),
+  //               DropdownMenuItem(value: 'Selangor', child: Text('Selangor')),
+  //               DropdownMenuItem(value: 'Terengganu', child: Text('Terengganu')),
+  //             ],
+  //             onChanged: (value) {
+  //               if (value != null) {
+  //                 setState(() {
+  //                   _currentSettings = _currentSettings.copyWith(
+  //                     regionalFocus: value,
+  //                   );
+  //                 });
+  //               }
+  //             },
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildLanguageChip(String code, String label, String flag) {
     final isSelected = _currentSettings.language == code;
@@ -358,11 +430,17 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          gradient: isSelected ? const LinearGradient(colors: [Color(0xFFA51212), Color(0xFFD32F2F)]) : null,
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                )
+              : null,
           color: isSelected ? null : const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+            color: isSelected
+                ? const Color(0xFFA51212)
+                : const Color(0xFF2A2A2A),
             width: 2,
           ),
         ),
@@ -441,10 +519,12 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
   String _getPreviewText() {
     if (_currentSettings.humorLevel == 1) {
       return "Petronas Twin Towers, completed in 1998, stands at 451.9 meters. The towers feature Islamic geometric patterns.";
-    } else if (_currentSettings.humorLevel == 4) {
-      return "OMG the Petronas Towers!! 🤩✨ They're like Malaysia's version of Eiffel Tower but DOUBLED! 🏢🏢 And yes, you can walk on that skybridge! 😱☁️";
-    } else {
+    } else if (_currentSettings.humorLevel == 2) {
+      return "The Petronas Twin Towers are an iconic symbol of Malaysia! 🏙️ Completed in 1998, they were the tallest buildings in the world until 2004. Their design incorporates Islamic geometric patterns, reflecting Malaysia's cultural heritage.";
+    } else if (_currentSettings.humorLevel == 3) {
       return "The Petronas Twin Towers are absolutely stunning! 🏙️ Built in 1998, they were the world's tallest buildings until 2004. The Islamic-inspired design is really something special.";
+    } else {
+      return "OMG the Petronas Towers!! 🤩✨ They're like Malaysia's version of Eiffel Tower but DOUBLED! 🏢🏢 And yes, you can walk on that skybridge! 😱☁️";
     }
   }
 

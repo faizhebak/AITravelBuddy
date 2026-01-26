@@ -1,12 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Import dotenv
 import 'presentation/home.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: ".env"); // Load .env file
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
+  void testBackend() async {
+    try {
+      final baseUrl = dotenv.env['BASE_URL'];
+      final url = Uri.parse('$baseUrl/api/test'); // emulator IP
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('Backend reachable: ${data['message']}');
+      } else {
+        print('Backend error: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error connecting to backend: $e');
+    }
+  }
 
   // This widget is the root of your application.
   @override
@@ -33,7 +54,7 @@ class MyApp extends StatelessWidget {
           seedColor: const Color.fromARGB(255, 196, 12, 12),
         ),
       ),
-      home: Home(),
+      home: const Home(),
     );
   }
 }

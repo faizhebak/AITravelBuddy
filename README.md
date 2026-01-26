@@ -1,20 +1,29 @@
-# aitravelbuddy
+# AI Travel Buddy - Flutter Frontend
 
-A new Flutter project.
+**AI Travel Buddy** is a smart, interactive travel assistant built with Flutter. It provides personalized travel advice and route suggestions, powered by an AI backend with real-time streaming.
 
-## Getting Started
+## 📚 Documentation
 
-This project is a starting point for a Flutter application.
+Detailed documentation is available in the `docs/` directory:
 
-A few resources to get you started if this is your first Flutter project:
+- [**🚀 Features**](docs/features.md): Overview of AI Chat, Persona customization, and Demonstration features (AR/Image).
+- [**🔌 Backend Integration**](docs/backend_integration.md): API Specification required for the backend.
+- [**⚙️ Setup & Installation**](docs/setup_guide.md): Guide on prerequisites and `.env` configuration.
+- [**🏗️ Architecture**](docs/architecture.md): Project structure and Tech Stack details.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## ⚡ Quick Start
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1.  **Clone & Install**:
+    ```bash
+    git clone https://github.com/faizhebak/AITravelBuddy.git
+    cd aitravelbuddy
+    flutter pub get
+    ```
 
-hi ni berjaya initialize
+2.  **Configure Backend**:
+    Create a `.env` file with your `BASE_URL`. See [Setup Guide](docs/setup_guide.md) for details.
 
-ni sumpah try commit pakai vs code je, tak pakai github desktop dsadsa
+3.  **Run**:
+    ```bash
+    flutter run
+    ```

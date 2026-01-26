@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'dart:io';
 import 'dart:async';
-
+import 'dart:convert';
 import '../data/chatbot_models.dart';
 import 'ai_settings_screen.dart';
+import '../services/settings_service.dart';
+import '../services/chat_api_service.dart';
+import '../services/session_api_service.dart';
+import '../presentation/ar_scanner_page.dart';
 
 class RouteSuggestion extends StatefulWidget {
   const RouteSuggestion({super.key});
@@ -15,17 +22,26 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final ImagePicker _picker = ImagePicker();
+  // For image preview before sending
+  File? _pendingImage;
+  String? _pendingImagePath;
 
   List<ChatSession> _allSessions = [];
   ChatSession? _currentSession;
   bool _isTyping = false;
   AISettings _globalSettings = AISettings.defaultSettings();
+  bool _isLoadingSessions = false;
+
+  // Maps local session ID to backend session data
+  final Map<String, ApiChatSession> _sessionApiMap = {};
 
   @override
   void initState() {
     super.initState();
     _loadChatSessions();
     _createNewSession();
+    _loadSettingsFromStore();
   }
 
   @override
@@ -35,66 +51,177 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     super.dispose();
   }
 
-  void _loadChatSessions() {
+  Future<void> _loadChatSessions() async {
     setState(() {
-      _allSessions = [
-        ChatSession(
-          id: 'demo-1',
-          title: 'Penang Food Guide',
-          createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-          lastActiveAt: DateTime.now().subtract(const Duration(hours: 1)),
+      _isLoadingSessions = true;
+    });
+
+    try {
+      final userId = await _getUserId();
+      final apiSessions = await SessionApiService.getSessions(userId);
+
+      final sessions = apiSessions.map((api) {
+        // Store mapping for API calls
+        _sessionApiMap[api.uuid] = api;
+
+        return ChatSession(
+          id: api.uuid,
+          title: api.title ?? 'Untitled Chat',
+          createdAt: api.createdAt,
+          lastActiveAt: api.updatedAt,
           messages: [],
           aiSettings: _globalSettings,
-        ),
-      ];
-    });
+        );
+      }).toList();
+
+      setState(() {
+        _allSessions = sessions;
+        _isLoadingSessions = false;
+      });
+    } catch (e) {
+      print('Error loading sessions from API: $e');
+      setState(() {
+        _isLoadingSessions = false;
+        // Fallback to empty list on error
+        _allSessions = [];
+      });
+    }
   }
 
-  void _createNewSession() {
-    final newSession = ChatSession(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: 'New Chat',
-      createdAt: DateTime.now(),
-      lastActiveAt: DateTime.now(),
-      messages: [],
-      aiSettings: _globalSettings,
-    );
+  Future<void> _createNewSession() async {
+    try {
+      // Create session on backend first
+      final userIdStr = await _getUserId();
+      final userId = int.tryParse(userIdStr) ?? 1;
 
-    newSession.messages.add(
-      ChatMessage(
-        text:
-            "Selamat datang! 👋 I'm your Malaysia tourism AI assistant. I can help you with:\n\n🏨 Hotel Booking\n🗺️ Route Suggestions\n🍜 Food Recommendations\n📸 Food Recognition\n🎭 Cultural Insights\n\nWhat would you like to explore today?",
-        isUser: false,
-        timestamp: DateTime.now(),
-      ),
-    );
+      final apiSession = await SessionApiService.createSession(
+        userId: userId,
+        title: 'New Chat',
+      );
+
+      // Store mapping for API calls
+      _sessionApiMap[apiSession.uuid] = apiSession;
+
+      final newSession = ChatSession(
+        id: apiSession.uuid,
+        title: apiSession.title ?? 'New Chat',
+        createdAt: apiSession.createdAt,
+        lastActiveAt: apiSession.updatedAt,
+        messages: [],
+        aiSettings: _globalSettings,
+      );
+
+      setState(() {
+        _currentSession = newSession;
+        _allSessions.insert(0, newSession);
+      });
+
+      // Load initial greeting from backend
+      _sendInitialGreeting();
+    } catch (e) {
+      print('Error creating session: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create session: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Update _sendMessage method to use the new backend call:
+  void _navigateToPage(BuildContext context, Widget page) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => page));
+  }
+
+  void _sendImageWithMessage() {
+    if (_pendingImage == null || _currentSession == null) return;
+
+    final userMessage = _messageController.text.trim();
+    final imageFile = _pendingImage!;
 
     setState(() {
-      _currentSession = newSession;
-      _allSessions.insert(0, newSession);
+      // Add image with optional text to chat
+      _currentSession!.messages.add(
+        ChatMessage(
+          text: userMessage.isEmpty ? '[Image]' : userMessage,
+          isUser: true,
+          timestamp: DateTime.now(),
+          type: MessageType.image,
+          imageUrl: _pendingImagePath,
+        ),
+      );
+      _currentSession!.lastActiveAt = DateTime.now();
+
+      // Clear pending image and text
+      _pendingImage = null;
+      _pendingImagePath = null;
+      _messageController.clear();
     });
+
+    _scrollToBottom();
+
+    // Send image to backend with user's message
+    _sendImageToBackend(
+      imageFile,
+      userMessage.isEmpty ? 'Analyze this image.' : userMessage,
+    );
   }
 
   void _sendMessage() {
+    // Check if we have a pending image
+    if (_pendingImage != null) {
+      _sendImageWithMessage();
+      return;
+    }
     if (_messageController.text.trim().isEmpty || _currentSession == null) {
       return;
     }
 
     final userMessage = _messageController.text.trim();
+    final isFirstMessage =
+        _currentSession!.messages.length == 1; // After welcome message
+
     setState(() {
+      // Add user message
       _currentSession!.messages.add(
         ChatMessage(text: userMessage, isUser: true, timestamp: DateTime.now()),
       );
       _currentSession!.lastActiveAt = DateTime.now();
-      if (_currentSession!.messages.length == 2) {
+
+      // Update title if this is the first user message
+      if (isFirstMessage) {
         _currentSession!.title = _generateTitle(userMessage);
       }
+
       _messageController.clear();
-      _isTyping = true;
     });
 
+    // Sync title to backend if it was just generated
+    if (isFirstMessage) {
+      _syncTitleToBackend(_currentSession!);
+    }
+
     _scrollToBottom();
-    _simulateAIResponse(userMessage);
+
+    // Send to backend instead of simulating
+    _sendMessageToBackend(userMessage);
+  }
+
+  /// Sync session title to backend
+  Future<void> _syncTitleToBackend(ChatSession session) async {
+    try {
+      final apiSession = _sessionApiMap[session.id];
+      if (apiSession != null) {
+        await SessionApiService.updateSession(
+          sessionId: apiSession.id,
+          title: session.title,
+        );
+      }
+    } catch (e) {
+      print('Error syncing title: $e');
+      // Non-critical, don't show error to user
+    }
   }
 
   String _generateTitle(String message) {
@@ -104,30 +231,341 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     return message.split(' ').take(3).join(' ');
   }
 
-  void _simulateAIResponse(String userMessage) {
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
+  // New method to send message to backend with streaming response
+  void _sendMessageToBackend(String userMessage) async {
+    if (!mounted) return;
 
-      bool hasRouteCard = userMessage.toLowerCase().contains('route');
+    // Show typing indicator
+    setState(() {
+      _isTyping = true;
+    });
+
+    try {
+      // Create a temporary message for streaming response
+      final streamingMessage = ChatMessage(
+        text: '',
+        isUser: false,
+        timestamp: DateTime.now(),
+        hasRouteCard: userMessage.toLowerCase().contains('route'),
+      );
+
+      // Add the empty message to the list
+      setState(() {
+        _currentSession!.messages.add(streamingMessage);
+        _isTyping = false;
+      });
+
+      // Get the index of this message
+      final messageIndex = _currentSession!.messages.length - 1;
+
+      // Stream the response
+      await for (final chunk in ChatApiService.sendMessage(
+        sessionId: _currentSession!.id,
+        userId: await _getUserId(),
+        userMessage: userMessage,
+        userPreference: _currentSession!.aiSettings.toApiPreference(),
+      )) {
+        if (!mounted) break;
+
+        setState(() {
+          // Update the message text with new chunk
+          _currentSession!.messages[messageIndex] = ChatMessage(
+            text: _currentSession!.messages[messageIndex].text + chunk,
+            isUser: false,
+            timestamp: streamingMessage.timestamp,
+            hasRouteCard: streamingMessage.hasRouteCard,
+          );
+        });
+
+        // Auto-scroll as text comes in
+        _scrollToBottom();
+      }
+
+      // Mark as complete
+      if (mounted) {
+        setState(() {
+          _currentSession!.lastActiveAt = DateTime.now();
+        });
+      }
+    } catch (e) {
+      print('Error streaming message: $e');
+
+      if (!mounted) return;
 
       setState(() {
         _isTyping = false;
         _currentSession!.messages.add(
           ChatMessage(
-            text: hasRouteCard
-                ? "Here's a personalized 5-stop heritage route in Melaka! 🗺️"
-                : "Great question! 😊 Let me help you with that. Malaysia has incredible ${userMessage.toLowerCase().contains('food') ? 'cuisine' : 'attractions'}!",
+            text:
+                'Sorry, I encountered an error. Please check your connection and try again.',
             isUser: false,
             timestamp: DateTime.now(),
-            hasRouteCard: hasRouteCard,
           ),
         );
       });
 
-      _scrollToBottom();
-    });
+      // Show error to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Connection error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
+  // Rename chat session
+  void _renameSession(ChatSession session) {
+    final controller = TextEditingController(text: session.title);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Rename Chat', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Enter new name',
+            hintStyle: const TextStyle(color: Color(0xFFB3B3B3)),
+            filled: true,
+            fillColor: const Color(0xFF121212),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFA51212)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFFB3B3B3)),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                setState(() {
+                  session.title = controller.text.trim();
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Chat renamed'),
+                    backgroundColor: Color(0xFFA51212),
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              'Rename',
+              style: TextStyle(color: Color(0xFFA51212)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Delete chat session
+  void _deleteSession(ChatSession session) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Delete Chat', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Are you sure you want to delete "${session.title}"?',
+          style: const TextStyle(color: Color(0xFFB3B3B3)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFFB3B3B3)),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              // Delete from backend
+              try {
+                final apiSession = _sessionApiMap[session.id];
+                if (apiSession != null) {
+                  await SessionApiService.deleteSession(apiSession.id);
+                  _sessionApiMap.remove(session.id);
+                }
+
+                setState(() {
+                  _allSessions.remove(session);
+                  if (_currentSession?.id == session.id) {
+                    _currentSession = _allSessions.isNotEmpty
+                        ? _allSessions[0]
+                        : null;
+                    if (_currentSession == null) {
+                      _createNewSession();
+                    }
+                  }
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Chat deleted'),
+                    backgroundColor: Color(0xFFA51212),
+                  ),
+                );
+              } catch (e) {
+                print('Error deleting session: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to delete: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Color(0xFFD32F2F)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Load messages for an existing session from the backend
+  Future<void> _loadSessionMessages(ChatSession session) async {
+    final apiSession = _sessionApiMap[session.id];
+    if (apiSession == null) {
+      print('No API session found for ${session.id}');
+      return;
+    }
+
+    setState(() {
+      _isTyping = true;
+    });
+
+    try {
+      final response = await SessionApiService.getSessionMessages(
+        apiSession.id,
+      );
+
+      // Convert API messages to ChatMessage objects
+      final messages = response.messages
+          .map(
+            (apiMsg) => ChatMessage(
+              text: apiMsg.content,
+              isUser: apiMsg.isUser,
+              timestamp: apiMsg.createdAt,
+              imageUrl: apiMsg.imageBase64,
+            ),
+          )
+          .toList();
+
+      setState(() {
+        session.messages = messages;
+        session.title = response.session.title ?? session.title;
+        _isTyping = false;
+      });
+
+      _scrollToBottom();
+    } catch (e) {
+      print('Error loading messages: $e');
+      setState(() {
+        _isTyping = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load messages: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Add a method to send initial greeting
+
+  void _sendInitialGreeting() async {
+    if (_currentSession == null || _currentSession!.messages.length > 1) {
+      return;
+    }
+
+    setState(() {
+      _isTyping = true;
+    });
+
+    try {
+      // Create streaming message for welcome
+      final streamingMessage = ChatMessage(
+        text: '',
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+
+      setState(() {
+        // Replace the hardcoded welcome message
+        _currentSession!.messages.clear();
+        _currentSession!.messages.add(streamingMessage);
+        _isTyping = false;
+      });
+
+      final messageIndex = 0;
+
+      // Stream the initial greeting
+      await for (final chunk in ChatApiService.sendMessage(
+        sessionId: _currentSession!.id,
+        userId: await _getUserId(),
+        userMessage: 'Hello!', // Trigger backend greeting
+        userPreference: _currentSession!.aiSettings.toApiPreference(),
+      )) {
+        if (!mounted) break;
+
+        setState(() {
+          _currentSession!.messages[messageIndex] = ChatMessage(
+            text: _currentSession!.messages[messageIndex].text + chunk,
+            isUser: false,
+            timestamp: streamingMessage.timestamp,
+          );
+        });
+
+        _scrollToBottom();
+      }
+    } catch (e) {
+      print('Error loading initial greeting: $e');
+
+      // Fallback to hardcoded message
+      if (mounted) {
+        setState(() {
+          _isTyping = false;
+          _currentSession!.messages.clear();
+          _currentSession!.messages.add(
+            ChatMessage(
+              text:
+                  "Selamat datang! 👋 I'm your Malaysia tourism AI assistant. I can help you with:\n\n🏨 Hotel Booking\n🗺️ Route Suggestions\n🍜 Food Recommendations\n📸 Food Recognition\n🎭 Cultural Insights\n\nWhat would you like to explore today?",
+              isUser: false,
+              timestamp: DateTime.now(),
+            ),
+          );
+        });
+      }
+    }
+  }
+
+  // Method to scroll to bottom of chat
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
@@ -140,6 +578,7 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     });
   }
 
+  // Method to handle image upload
   void _handleImageUpload() {
     showModalBottomSheet(
       context: context,
@@ -161,28 +600,31 @@ class RouteSuggestionState extends State<RouteSuggestion> {
               ),
             ),
             const SizedBox(height: 20),
+
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.white),
               title: const Text(
                 'Take Photo',
                 style: TextStyle(color: Colors.white),
               ),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                print('Open camera');
+                await _takePhoto();
               },
             ),
+
             ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.white),
               title: const Text(
                 'Choose from Gallery',
                 style: TextStyle(color: Colors.white),
               ),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                print('Open gallery');
+                await _chooseFromGallery();
               },
             ),
+
             ListTile(
               leading: const Icon(Icons.close, color: Colors.white),
               title: const Text(
@@ -195,6 +637,138 @@ class RouteSuggestionState extends State<RouteSuggestion> {
         ),
       ),
     );
+  }
+
+  // Method to take photo using camera
+  Future<void> _takePhoto() async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 1024,
+        maxHeight: 1024,
+      );
+
+      if (photo != null) {
+        setState(() {
+          _pendingImage = File(photo.path);
+          _pendingImagePath = photo.path;
+        });
+
+        _scrollToBottom();
+      }
+    } catch (e) {
+      print('Error taking photo: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to take photo: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Method to choose image from gallery
+  Future<void> _chooseFromGallery() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1024,
+        maxHeight: 1024,
+      );
+
+      if (image != null) {
+        setState(() {
+          _pendingImage = File(image.path);
+          _pendingImagePath = image.path;
+        });
+
+        _scrollToBottom();
+      }
+    } catch (e) {
+      print('Error selecting image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to select image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Method to send image to backend
+  Future<void> _sendImageToBackend(File imageFile, String userMessage) async {
+    if (!mounted) return;
+
+    setState(() {
+      _isTyping = true;
+    });
+
+    try {
+      // Convert image to base64
+      final bytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      // Create streaming message for AI response
+      final streamingMessage = ChatMessage(
+        text: '',
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+
+      setState(() {
+        _currentSession!.messages.add(streamingMessage);
+        _isTyping = false;
+      });
+
+      final messageIndex = _currentSession!.messages.length - 1;
+
+      // Send image via /api/chat with image_base64 field and user's message
+      await for (final chunk in ChatApiService.sendMessage(
+        sessionId: _currentSession!.id,
+        userId: await _getUserId(),
+        userMessage: userMessage,
+        imageBase64: base64Image,
+        userPreference: _currentSession!.aiSettings.toApiPreference(),
+      )) {
+        if (!mounted) break;
+
+        setState(() {
+          _currentSession!.messages[messageIndex] = ChatMessage(
+            text: _currentSession!.messages[messageIndex].text + chunk,
+            isUser: false,
+            timestamp: streamingMessage.timestamp,
+          );
+        });
+
+        _scrollToBottom();
+      }
+
+      _scrollToBottom();
+    } catch (e) {
+      print('Error sending image: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _isTyping = false;
+        _currentSession!.messages.add(
+          ChatMessage(
+            text: 'Sorry, I couldn\'t analyze the image. Please try again.',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Image analysis failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -217,9 +791,11 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                         vertical: 16,
                       ),
                       itemCount:
-                          _currentSession!.messages.length + (_isTyping ? 1 : 0),
+                          _currentSession!.messages.length +
+                          (_isTyping ? 1 : 0),
                       itemBuilder: (context, index) {
-                        if (_isTyping && index == _currentSession!.messages.length) {
+                        if (_isTyping &&
+                            index == _currentSession!.messages.length) {
                           return _buildTypingIndicator();
                         }
                         return _buildMessageBubble(
@@ -280,11 +856,76 @@ class RouteSuggestionState extends State<RouteSuggestion> {
                   final isActive = _currentSession?.id == session.id;
 
                   return InkWell(
-                    onTap: () {
+                    onTap: () async {
                       setState(() {
                         _currentSession = session;
                       });
                       Navigator.pop(context);
+
+                      // Load messages from backend if this session has no local messages
+                      if (session.messages.isEmpty &&
+                          _sessionApiMap.containsKey(session.id)) {
+                        await _loadSessionMessages(session);
+                      }
+                    },
+                    onLongPress: () {
+                      // Show options menu on long press
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: const Color(0xFF1E1E1E),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
+                        ),
+                        builder: (context) => Container(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                ),
+                                title: const Text(
+                                  'Rename',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _renameSession(session);
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                title: const Text(
+                                  'Delete',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _deleteSession(session);
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                ),
+                                title: const Text(
+                                  'Cancel',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                onTap: () => Navigator.pop(context),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
                     },
                     child: Container(
                       margin: const EdgeInsets.symmetric(
@@ -326,7 +967,9 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       MaterialPageRoute(
         builder: (context) => AISettingsScreen(
           settings: _globalSettings,
-          onSave: (newSettings) {
+          onSave: (newSettings) async {
+            final userId = await _getUserId();
+            await SettingsService.saveSettings(userId, newSettings);
             setState(() {
               _globalSettings = newSettings;
               if (_currentSession != null) {
@@ -337,6 +980,23 @@ class RouteSuggestionState extends State<RouteSuggestion> {
         ),
       ),
     );
+  }
+
+  // Placeholder user id retrieval - replace with real phone/user id retrieval as needed
+  // Returns '1' which is the first seeded user in the database
+  Future<String> _getUserId() async {
+    return '1'; // TODO: Replace with actual authenticated user ID
+  }
+
+  Future<void> _loadSettingsFromStore() async {
+    final userId = await _getUserId();
+    final settings = await SettingsService.loadSettings(userId);
+    setState(() {
+      _globalSettings = settings;
+      if (_currentSession != null) {
+        _currentSession!.aiSettings = settings;
+      }
+    });
   }
 
   Widget _buildHeader() {
@@ -432,7 +1092,9 @@ class RouteSuggestionState extends State<RouteSuggestion> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: message.isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!message.isUser) ...[
             Container(
@@ -449,47 +1111,78 @@ class RouteSuggestionState extends State<RouteSuggestion> {
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: message.isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: message.isUser ? const Color(0xFFA51212) : const Color(0xFF2A2A2A),
+                // Show image if message has one
+                if (message.type == MessageType.image &&
+                    message.imageUrl != null) ...[
+                  Container(
+                    margin: EdgeInsets.only(
+                      right: message.isUser ? 0 : 32,
+                      left: message.isUser ? 32 : 0,
+                      bottom: 8,
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: message.isUser
-                        ? const LinearGradient(
-                            colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
-                          )
-                        : null,
-                    color: message.isUser ? null : const Color(0xFF1E1E1E),
-                  ),
-                  padding: const EdgeInsets.all(13),
-                  margin: EdgeInsets.only(
-                    right: message.isUser ? 0 : 32,
-                    left: message.isUser ? 32 : 0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        message.text,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.file(
+                        File(message.imageUrl!),
+                        width: 200,
+                        height: 200,
+                        fit: BoxFit.cover,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _formatTime(message.timestamp),
-                        style: TextStyle(
-                          color: message.isUser ? const Color(0xFFFFFEFE) : const Color(0xFFB3B3B3),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
+
+                // Text bubble
+                if (message.text.isNotEmpty) ...[
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: message.isUser
+                            ? const Color(0xFFA51212)
+                            : const Color(0xFF2A2A2A),
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: message.isUser
+                          ? const LinearGradient(
+                              colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                            )
+                          : null,
+                      color: message.isUser ? null : const Color(0xFF1E1E1E),
+                    ),
+                    padding: const EdgeInsets.all(13),
+                    margin: EdgeInsets.only(
+                      right: message.isUser ? 0 : 32,
+                      left: message.isUser ? 32 : 0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          message.text,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _formatTime(message.timestamp),
+                          style: TextStyle(
+                            color: message.isUser
+                                ? const Color(0xFFFFFEFE)
+                                : const Color(0xFFB3B3B3),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 if (message.hasRouteCard) ...[
                   const SizedBox(height: 8),
                   _buildRouteCard(),
@@ -689,63 +1382,115 @@ class RouteSuggestionState extends State<RouteSuggestion> {
     return Container(
       color: const Color(0xFF121212),
       padding: const EdgeInsets.all(15),
-      child: Row(
+      child: Column(
         children: [
-          InkWell(
-            onTap: _handleImageUpload,
-            child: Container(
-              width: 35,
-              height: 35,
-              margin: const EdgeInsets.only(right: 8),
-              child: const Icon(Icons.camera_alt, color: Colors.white),
-            ),
-          ),
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              decoration: InputDecoration(
-                hintText: "Ask me anything about Malaysia...",
-                hintStyle: const TextStyle(
-                  color: Color(0xFFB3B3B3),
-                  fontSize: 16,
-                ),
-                filled: true,
-                fillColor: const Color(0xFF1E1E1E),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFA51212)),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 15,
-                  vertical: 12,
-                ),
-              ),
-              onSubmitted: (_) => _sendMessage(),
-            ),
-          ),
-          const SizedBox(width: 9),
-          InkWell(
-            onTap: _sendMessage,
-            child: Container(
-              width: 39,
-              height: 39,
+          // Image preview area
+          if (_pendingImage != null) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF2A2A2A)),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      _pendingImage!,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Image ready to send',
+                      style: TextStyle(color: Color(0xFFB3B3B3), fontSize: 14),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _pendingImage = null;
+                        _pendingImagePath = null;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+          // Input row
+          Row(
+            children: [
+              InkWell(
+                onTap: _handleImageUpload,
+                child: Container(
+                  width: 35,
+                  height: 35,
+                  margin: const EdgeInsets.only(right: 8),
+                  child: const Icon(Icons.camera_alt, color: Colors.white),
                 ),
               ),
-              child: const Icon(Icons.send, color: Colors.white),
-            ),
+              Expanded(
+                child: TextField(
+                  controller: _messageController,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  decoration: InputDecoration(
+                    hintText: _pendingImage != null
+                        ? "Add a caption (optional)..."
+                        : "Ask me anything about Malaysia...",
+                    hintStyle: const TextStyle(
+                      color: Color(0xFFB3B3B3),
+                      fontSize: 16,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFF1E1E1E),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFA51212)),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 12,
+                    ),
+                  ),
+                  onSubmitted: (_) => _sendMessage(),
+                ),
+              ),
+              const SizedBox(width: 9),
+              InkWell(
+                onTap: _sendMessage,
+                child: Container(
+                  width: 39,
+                  height: 39,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+                    ),
+                  ),
+                  child: const Icon(Icons.send, color: Colors.white),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -754,27 +1499,25 @@ class RouteSuggestionState extends State<RouteSuggestion> {
 
   Widget _buildBottomNavigation() {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF121212),
-      ),
+      decoration: BoxDecoration(color: const Color(0xFF121212)),
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildNavItem(
-            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/rcl0gtkr_expires_30_days.png",
+            FontAwesomeIcons.house,
             "Home",
             false,
             () => Navigator.pop(context),
           ),
           _buildNavItem(
-            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/k9kjfm62_expires_30_days.png",
+            FontAwesomeIcons.cameraRetro,
             "AR Scan",
             false,
-            () => print('AR Scan'),
+            () => _navigateToPage(context, const ARScannerPage()),
           ),
           _buildNavItem(
-            "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/kZ2ICKDiv2/nyaet7u9_expires_30_days.png",
+            FontAwesomeIcons.commentDots,
             "Chat AI",
             true,
             () {},
@@ -785,47 +1528,51 @@ class RouteSuggestionState extends State<RouteSuggestion> {
   }
 
   Widget _buildNavItem(
-    String icon,
-    String label,
-    bool isActive,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        decoration: isActive
-            ? BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0x4DA51212),
-                    blurRadius: 6,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
+  IconData icon,  // Changed from String to IconData
+  String label,
+  bool isActive,
+  VoidCallback onTap,
+) {
+  return InkWell(
+    onTap: onTap,
+    child: Container(
+      decoration: isActive
+          ? BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0x4DA51212),
+                  blurRadius: 6,
+                  offset: const Offset(0, 4),
                 ),
-              )
-            : null,
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 11),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.network(icon, width: 23, height: 23),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? Colors.white : const Color(0xFFB3B3B3),
-                fontSize: 12,
+              ],
+              gradient: const LinearGradient(
+                colors: [Color(0xFFA51212), Color(0xFFD32F2F)],
               ),
+            )
+          : null,
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 11),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FaIcon(  // Changed from Image.network to FaIcon
+            icon,
+            size: 23,
+            color: isActive ? Colors.white : const Color(0xFFB3B3B3),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isActive ? Colors.white : const Color(0xFFB3B3B3),
+              fontSize: 12,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   String _formatTime(DateTime timestamp) {
     return "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
