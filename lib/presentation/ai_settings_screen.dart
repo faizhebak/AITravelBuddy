@@ -55,8 +55,8 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildAvatarSelector(),
-          const SizedBox(height: 24),
+          // _buildAvatarSelector(),
+          // const SizedBox(height: 24),
           _buildHumorLevelSlider(),
           const SizedBox(height: 24),
           _buildAnswerLengthSelector(),
