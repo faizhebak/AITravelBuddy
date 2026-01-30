@@ -20,6 +20,8 @@ class AllDestinationsPage extends StatelessWidget {
           separatorBuilder: (_, __) => const SizedBox(height: 16),
           itemBuilder: (context, index) {
             final dest = destinations[index];
+            final imagePath = dest['image'] as String;
+            
             return GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -28,9 +30,9 @@ class AllDestinationsPage extends StatelessWidget {
                     builder: (context) => DestinationDetailsPage(
                       title: dest['title'] as String,
                       maps: dest['maps'] as String,
-                      image: dest['image'] as String,
+                      image: imagePath,
                       location: dest['location'] as String,
-                      locationIcon: dest['locationIcon'] as String,
+                      locationIcon: dest['locationIcon'] as String? ?? '',
                       description: dest['description'] as String,
                     ),
                   ),
@@ -49,12 +51,19 @@ class AllDestinationsPage extends StatelessWidget {
                         topLeft: Radius.circular(16),
                         bottomLeft: Radius.circular(16),
                       ),
-                      child: Image.network(
-                        dest['image'] as String,
-                        width: 95,
-                        height: 95,
-                        fit: BoxFit.cover,
-                      ),
+                      child: imagePath.startsWith('http')
+                          ? Image.network(
+                              imagePath,
+                              width: 95,
+                              height: 95,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.asset(
+                              imagePath,
+                              width: 95,
+                              height: 95,
+                              fit: BoxFit.cover,
+                            ),
                     ),
                     Expanded(
                       child: Padding(
@@ -73,13 +82,23 @@ class AllDestinationsPage extends StatelessWidget {
                             const SizedBox(height: 5),
                             Row(
                               children: [
-                                Image.network(
-                                  dest['locationIcon'] as String,
-                                  width: 15,
-                                  height: 15,
-                                  fit: BoxFit.contain,
-                                ),
-                                const SizedBox(width: 4),
+                                if ((dest['locationIcon'] as String?)?.isNotEmpty ?? false)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: (dest['locationIcon'] as String).startsWith('http')
+                                        ? Image.network(
+                                            dest['locationIcon'] as String,
+                                            width: 15,
+                                            height: 15,
+                                            fit: BoxFit.contain,
+                                          )
+                                        : Image.asset(
+                                            dest['locationIcon'] as String,
+                                            width: 15,
+                                            height: 15,
+                                            fit: BoxFit.contain,
+                                          ),
+                                  ),
                                 Text(
                                   dest['location'] as String,
                                   style: const TextStyle(
