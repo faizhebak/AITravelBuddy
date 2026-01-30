@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
@@ -1378,36 +1379,90 @@ class RouteSuggestionState extends State<RouteSuggestion> {
         ),
       );
     } else {
-      // AI message - clean non-bubble style WITHOUT avatar
+      // AI message - clean non-bubble style WITHOUT avatar WITH MARKDOWN
       return Padding(
         padding: const EdgeInsets.only(bottom: 16, left: 0, right: 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Clean text without bubble and NO avatar
+            // Clean text with Markdown rendering
             if (message.text.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      message.text,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        height: 1.5,
+              MarkdownBody(
+                data: message.text,
+                styleSheet: MarkdownStyleSheet(
+                  p: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                  strong: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  em: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  listBullet: const TextStyle(
+                    color: Color(0xFFA51212),
+                    fontSize: 14,
+                  ),
+                  h1: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  h2: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  h3: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  code: const TextStyle(
+                    color: Color(0xFFA51212),
+                    backgroundColor: Color(0xFF1E1E1E),
+                    fontSize: 13,
+                    fontFamily: 'monospace',
+                  ),
+                  codeblockDecoration: BoxDecoration(
+                    color: const Color(0xFF1E1E1E),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF2A2A2A)),
+                  ),
+                  blockquote: const TextStyle(
+                    color: Color(0xFFB3B3B3),
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  blockquoteDecoration: BoxDecoration(
+                    color: const Color(0xFF1E1E1E),
+                    borderRadius: BorderRadius.circular(4),
+                    border: const Border(
+                      left: BorderSide(
+                        color: Color(0xFFA51212),
+                        width: 4,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _formatTime(message.timestamp),
-                      style: const TextStyle(
-                        color: Color(0xFFB3B3B3),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
+                  ),
+                  a: const TextStyle(
+                    color: Color(0xFFA51212),
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+                selectable: true,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _formatTime(message.timestamp),
+                style: const TextStyle(
+                  color: Color(0xFFB3B3B3),
+                  fontSize: 12,
                 ),
               ),
             ],
